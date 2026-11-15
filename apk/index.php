@@ -167,9 +167,13 @@ $recentFeed = array_slice($feed, 0, 4);
 <div class="mobile-header">
     <div class="d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-2">
-            <div class="avatar-circle">
-                <?= strtoupper(substr($user['full_name'] ?: $user['username'], 0, 2)) ?>
-            </div>
+            <?php if (!empty($user['avatar']) && file_exists(__DIR__ . '/../' . $user['avatar'])): ?>
+                <img src="<?= base_url($user['avatar']) ?>?v=<?= time() ?>" alt="Avatar" class="avatar-circle" style="object-fit: cover;">
+            <?php else: ?>
+                <div class="avatar-circle">
+                    <?= strtoupper(substr($user['full_name'] ?: $user['username'], 0, 2)) ?>
+                </div>
+            <?php endif; ?>
             <div>
                 <div class="text-white-50" style="font-size: 0.72rem;">Selamat datang,</div>
                 <div class="fw-bold text-white" style="font-size: 0.95rem; line-height: 1.1;">

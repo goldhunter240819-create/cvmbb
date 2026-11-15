@@ -65,6 +65,76 @@ $localIp         = gethostbyname(gethostname());
             min-height: 100vh;
         }
 
+        /* Anti Page Shift / Jumping pada Popups & Modals */
+        html.swal2-shown,
+        body.swal2-shown,
+        body.modal-open {
+            overflow-y: scroll !important;
+            padding-right: 0 !important;
+        }
+        .swal2-container {
+            overflow-y: auto !important;
+        }
+
+        /* Mobile Typography Fine-Tuning (Compact & Anti-Clipping) */
+        body {
+            font-size: 0.82rem !important;
+            line-height: 1.38;
+        }
+        h1, .h1 { font-size: 1.3rem !important; }
+        h2, .h2 { font-size: 1.15rem !important; }
+        h3, .h3 { font-size: 1.05rem !important; }
+        h4, .h4 { font-size: 0.95rem !important; }
+        h5, .h5 { font-size: 0.88rem !important; }
+        h6, .h6 { font-size: 0.80rem !important; }
+
+        .app-top-navbar h5 {
+            font-size: 0.90rem !important;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .form-control, .form-select {
+            font-size: 0.82rem !important;
+            padding: 7px 11px !important;
+            border-radius: 10px !important;
+        }
+        .form-label {
+            font-size: 0.75rem !important;
+            margin-bottom: 3px !important;
+            font-weight: 600;
+        }
+        .btn {
+            font-size: 0.82rem !important;
+            padding: 7px 12px !important;
+            border-radius: 10px !important;
+        }
+        .btn-sm {
+            font-size: 0.74rem !important;
+            padding: 4px 8px !important;
+            border-radius: 7px !important;
+        }
+        .badge {
+            font-size: 0.65rem !important;
+            font-weight: 600 !important;
+            padding: 3px 6px !important;
+        }
+        .table {
+            font-size: 0.76rem !important;
+        }
+        .table th, .table td {
+            padding: 6px 8px !important;
+        }
+        .mobile-card {
+            padding: 14px 16px !important;
+            border-radius: 14px !important;
+        }
+        .card-title {
+            font-size: 0.88rem !important;
+        }
+
         /* Container Aplikasi Fleksibel & Rapi (Menyesuaikan Layar HP / Desktop Widescreen) */
         .app-container {
             width: 100%;

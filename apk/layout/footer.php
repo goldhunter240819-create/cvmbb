@@ -41,6 +41,18 @@ $localIp = gethostbyname(gethostname());
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+// Global SweetAlert2 Anti-Shift (Mencegah Layar Bergeser/Melompat Saat Popup Terbuka)
+if (typeof Swal !== 'undefined') {
+    const _origFire = Swal.fire;
+    Swal.fire = function (...args) {
+        if (typeof args[0] === 'object' && args[0] !== null) {
+            args[0].scrollbarPadding = false;
+            args[0].heightAuto = false;
+        }
+        return _origFire.apply(this, args);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // 1. Intercept Logout dengan SweetAlert2 Modern
     document.querySelectorAll('.btn-logout-confirm, a[href*="logout.php"]').forEach(function (btn) {

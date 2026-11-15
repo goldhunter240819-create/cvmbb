@@ -174,7 +174,11 @@ $bannerDesc     = $pageDesc ?? $activeMeta['desc'];
             <!-- User Profile Dropdown -->
             <div class="dropdown">
                 <div class="user-profile-badge" data-bs-toggle="dropdown" aria-expanded="false">
-                    <div class="user-avatar"><?= e($initials) ?></div>
+                    <?php if (!empty($user['avatar']) && file_exists(__DIR__ . '/../' . $user['avatar'])): ?>
+                        <img src="<?= base_url($user['avatar']) ?>?v=<?= time() ?>" alt="Avatar" class="user-avatar" style="object-fit: cover; border-radius: 50%;">
+                    <?php else: ?>
+                        <div class="user-avatar"><?= e($initials) ?></div>
+                    <?php endif; ?>
                     <div class="d-none d-sm-block text-start lh-1">
                         <div class="fw-bold text-dark" style="font-size: 0.85rem;"><?= e($displayName) ?></div>
                         <small class="text-muted" style="font-size: 0.72rem;"><?= e($displayPos) ?></small>

@@ -252,6 +252,17 @@ body {
     color: #ffffff;
 }
 
+/* Anti Page Shift / Jumping pada Popups & Modals */
+html.swal2-shown,
+body.swal2-shown,
+body.modal-open {
+    overflow-y: scroll !important;
+    padding-right: 0 !important;
+}
+.swal2-container {
+    overflow-y: auto !important;
+}
+
 /* ========================================================
    2. MAIN CONTENT AREA & TOPBAR
    ======================================================== */

@@ -3,6 +3,18 @@
  * Core Application JavaScript
  */
 
+// Global SweetAlert2 Anti-Shift (Mencegah Layar Bergeser/Melompat Saat Popup Terbuka)
+if (typeof Swal !== 'undefined') {
+    const _origFire = Swal.fire;
+    Swal.fire = function (...args) {
+        if (typeof args[0] === 'object' && args[0] !== null) {
+            args[0].scrollbarPadding = false;
+            args[0].heightAuto = false;
+        }
+        return _origFire.apply(this, args);
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // 1. Mobile Sidebar Toggle
     const sidebar = document.getElementById('sidebar');

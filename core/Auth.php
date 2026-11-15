@@ -20,7 +20,7 @@ class Auth {
 
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT u.*, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
+            SELECT u.*, COALESCE(u.avatar, e.avatar) AS avatar, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
             FROM users u
             INNER JOIN roles r ON u.role_id = r.id
             LEFT JOIN employees e ON u.employee_id = e.id
@@ -122,7 +122,7 @@ class Auth {
 
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT u.*, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
+            SELECT u.*, COALESCE(u.avatar, e.avatar) AS avatar, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
             FROM users u
             INNER JOIN roles r ON u.role_id = r.id
             LEFT JOIN employees e ON u.employee_id = e.id

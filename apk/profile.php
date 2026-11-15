@@ -9,9 +9,59 @@ $currentApkNav   = 'profile';
 
 require_once __DIR__ . '/layout/header.php';
 
-// Handle Ganti Password
+// Pastikan kolom avatar ada di tabel users
+try {
+    $db->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar VARCHAR(255) NULL AFTER email;");
+} catch (Exception $e) {}
+
 $successMsg = '';
 $errorMsg   = '';
+
+// Handle Upload Avatar
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'upload_avatar') {
+    if (isset($_FILES['avatar_file']) && $_FILES['avatar_file']['error'] === UPLOAD_ERR_OK) {
+        $fileTmp = $_FILES['avatar_file']['tmp_name'];
+        $fileName = $_FILES['avatar_file']['name'];
+        $fileSize = $_FILES['avatar_file']['size'];
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
+
+        $allowed = ['jpg', 'jpeg', 'png', 'webp'];
+        if (!in_array($ext, $allowed)) {
+            $errorMsg = 'Format file foto harus JPG, PNG, atau WEBP.';
+        } elseif ($fileSize > 5 * 1024 * 1024) {
+            $errorMsg = 'Ukuran file foto maksimal 5 MB.';
+        } else {
+            $targetDir = __DIR__ . '/../uploads/avatars';
+            if (!is_dir($targetDir)) {
+                @mkdir($targetDir, 0777, true);
+            }
+            $newFileName = 'avatar_' . $user['id'] . '_' . time() . '.' . $ext;
+            $destPath = $targetDir . '/' . $newFileName;
+            $relPath = 'uploads/avatars/' . $newFileName;
+
+            if (move_uploaded_file($fileTmp, $destPath)) {
+                // Update users
+                $stmtAv = $db->prepare("UPDATE users SET avatar = ? WHERE id = ?");
+                $stmtAv->execute([$relPath, $user['id']]);
+
+                // Update employees jika linked
+                if (!empty($user['employee_id'])) {
+                    $stmtEmAv = $db->prepare("UPDATE employees SET avatar = ? WHERE id = ?");
+                    $stmtEmAv->execute([$relPath, $user['employee_id']]);
+                }
+
+                $user['avatar'] = $relPath;
+                $successMsg = 'Foto profil berhasil diperbarui!';
+            } else {
+                $errorMsg = 'Gagal menyimpan file foto ke server.';
+            }
+        }
+    } else {
+        $errorMsg = 'Silakan pilih file foto terlebih dahulu.';
+    }
+}
+
+// Handle Ganti Password
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'change_pass') {
     $currentPass = $_POST['current_password'] ?? '';
     $newPass     = $_POST['new_password'] ?? '';
@@ -41,22 +91,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 ?>
 
 <div class="p-3">
-    <!-- User Info Card -->
+    <!-- User Info Card with Avatar Upload -->
     <div class="card border-0 text-white p-3 mb-3 shadow-sm" style="background: linear-gradient(135deg, #0d1e3a 0%, #1e3a8a 100%); border-radius: 20px;">
         <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold bg-primary text-white border border-2 border-white shadow-sm" style="width: 56px; height: 56px; font-size: 1.35rem; flex-shrink: 0;">
-                <?= strtoupper(substr($user['full_name'] ?: $user['username'], 0, 2)) ?>
+            <div class="position-relative" style="flex-shrink: 0;">
+                <?php if (!empty($user['avatar']) && file_exists(__DIR__ . '/../' . $user['avatar'])): ?>
+                    <img src="<?= base_url($user['avatar']) ?>?v=<?= time() ?>" alt="Avatar" class="rounded-circle border border-2 border-white shadow-sm" style="width: 58px; height: 58px; object-fit: cover;">
+                <?php else: ?>
+                    <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold bg-primary text-white border border-2 border-white shadow-sm" style="width: 58px; height: 58px; font-size: 1.35rem;">
+                        <?= strtoupper(substr($user['full_name'] ?: $user['username'], 0, 2)) ?>
+                    </div>
+                <?php endif; ?>
+                <label for="avatarUploadInput" class="position-absolute bottom-0 end-0 bg-primary text-white rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 22px; height: 22px; cursor: pointer; border: 2px solid white;" title="Ganti Foto">
+                    <i class="bi bi-camera-fill" style="font-size: 0.65rem;"></i>
+                </label>
+                <form id="avatarForm" method="POST" enctype="multipart/form-data" action="" class="d-none">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="upload_avatar">
+                    <input type="file" name="avatar_file" id="avatarUploadInput" accept="image/jpeg,image/png,image/webp" onchange="document.getElementById('avatarForm').submit();">
+                </form>
             </div>
             <div>
-                <span class="badge bg-light text-primary mb-1 font-monospace" style="font-size: 0.65rem;">
+                <span class="badge bg-light text-primary mb-1 font-monospace" style="font-size: 0.62rem;">
                     <?= strtoupper(e($user['role_title'] ?? $user['role_name'] ?? 'PENGGUNA')) ?>
                 </span>
-                <div class="fw-bold text-white" style="font-size: 1rem; line-height: 1.2;">
+                <div class="fw-bold text-white" style="font-size: 0.95rem; line-height: 1.2;">
                     <?= e($user['full_name'] ?: $user['username']) ?>
                 </div>
-                <div class="text-white-50 small" style="font-size: 0.72rem;">
+                <div class="text-white-50 small" style="font-size: 0.7rem;">
                     <?= e($user['email'] ?? 'Akun Sistem MBB') ?>
                 </div>
+                <label for="avatarUploadInput" class="text-info fw-semibold mt-1 d-inline-block" style="font-size: 0.68rem; cursor: pointer;">
+                    <i class="bi bi-pencil-square me-1"></i>Ganti Foto Profil
+                </label>
             </div>
         </div>
     </div>
