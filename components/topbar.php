@@ -158,12 +158,6 @@ $bannerDesc     = $pageDesc ?? $activeMeta['desc'];
         </div>
 
         <div class="topbar-right">
-            <!-- Pintasan Mode Tampilan APK Mobile -->
-            <a href="<?= base_url('apk/index.php') ?>" class="btn btn-sm btn-outline-primary d-none d-sm-inline-flex align-items-center gap-1" title="Lihat Tampilan Aplikasi Mobile APK">
-                <i class="bi bi-phone-fill"></i>
-                <span class="small fw-semibold">Mode APK</span>
-            </a>
-
             <?php if (Permission::isDeveloper()): ?>
                 <a href="<?= base_url('modules/developer/index.php') ?>" class="btn btn-sm btn-dark text-info border border-info border-opacity-50 d-flex align-items-center gap-1 font-monospace" style="font-size: 0.78rem;">
                     <i class="bi bi-terminal-fill text-info"></i>

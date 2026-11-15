@@ -44,6 +44,9 @@
 <!-- Bootstrap 5.3 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
+<!-- SweetAlert2 11 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <!-- MBB App JS (with cache buster) -->
 <script src="<?= asset_url('js/mbb-app.js?v=' . filemtime(__DIR__ . '/../assets/js/mbb-app.js')) ?>"></script>
 

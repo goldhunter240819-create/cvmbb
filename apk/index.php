@@ -179,9 +179,6 @@ $recentFeed = array_slice($feed, 0, 4);
             </div>
         </div>
         <div class="d-flex align-items-center gap-2">
-            <a href="<?= base_url('index.php') ?>" class="btn btn-sm btn-outline-light rounded-pill px-2 py-1 text-decoration-none fw-semibold" style="font-size: 0.72rem;" title="Buka Versi Desktop Web">
-                <i class="bi bi-display me-1"></i>Web
-            </a>
             <a href="<?= base_url('apk/profile.php') ?>" class="btn btn-sm btn-outline-light rounded-circle p-2" style="width: 36px; height: 36px; display:flex; align-items:center; justify-content:center;">
                 <i class="bi bi-person-fill"></i>
             </a>

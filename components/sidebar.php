@@ -1,7 +1,7 @@
 <?php
 /**
  * MBB BUSINESS MANAGEMENT SYSTEM
- * Layout Sidebar Component (Strict Accordion Dropdown)
+ * Layout Sidebar Component (Clean Dropdown Accordion)
  */
 
 $currentModule = $currentModule ?? 'dashboard';
@@ -17,7 +17,7 @@ $isAdmActive = in_array($currentModule, $admModules);
 $isSetActive = in_array($currentModule, $setModules);
 ?>
 <style>
-/* CSS Spesifik & Prioritas Tinggi untuk Sidebar Accordion MBB */
+/* CSS Scoped Bersih & Mewah untuk Sidebar Dropdown MBB */
 .sidebar .sidebar-dropdown-toggle {
     all: unset;
     box-sizing: border-box;
@@ -37,9 +37,25 @@ $isSetActive = in_array($currentModule, $setModules);
     transition: all 0.2s ease !important;
 }
 
+.sidebar .sidebar-dropdown-toggle .menu-left {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+}
+
+.sidebar .sidebar-dropdown-toggle .menu-left i {
+    font-size: 1.15rem !important;
+    color: #94a3b8 !important;
+    transition: color 0.2s !important;
+}
+
 .sidebar .sidebar-dropdown-toggle:hover {
     color: #ffffff !important;
     background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.sidebar .sidebar-dropdown-toggle:hover .menu-left i {
+    color: #60a5fa !important;
 }
 
 .sidebar .sidebar-dropdown-toggle.active {
@@ -49,15 +65,18 @@ $isSetActive = in_array($currentModule, $setModules);
     font-weight: 600 !important;
 }
 
-.sidebar .sidebar-dropdown-toggle.active i:first-child {
+.sidebar .sidebar-dropdown-toggle.active .menu-left i {
     color: #38bdf8 !important;
 }
 
 .sidebar .sidebar-dropdown-toggle .chevron-icon {
     font-size: 0.75rem !important;
+    color: #64748b !important;
+    transition: transform 0.25s ease, color 0.2s ease !important;
+}
+
+.sidebar .sidebar-dropdown-toggle:hover .chevron-icon {
     color: #94a3b8 !important;
-    transition: transform 0.25s ease !important;
-    margin-right: 0 !important;
 }
 
 .sidebar .sidebar-dropdown-toggle[aria-expanded="true"] .chevron-icon {
@@ -66,11 +85,11 @@ $isSetActive = in_array($currentModule, $setModules);
 }
 
 .sidebar .sidebar-submenu-inner {
-    border-left: 2px solid rgba(255, 255, 255, 0.14) !important;
-    margin-left: 20px !important;
-    padding-left: 8px !important;
+    border-left: 2px solid rgba(255, 255, 255, 0.12) !important;
+    margin-left: 22px !important;
+    padding-left: 10px !important;
     padding-top: 4px !important;
-    padding-bottom: 4px !important;
+    padding-bottom: 6px !important;
     display: flex !important;
     flex-direction: column !important;
     gap: 3px !important;
@@ -130,17 +149,15 @@ $isSetActive = in_array($currentModule, $setModules);
 
     <div class="sidebar-menu" id="sidebarMenu">
         <!-- 1. DASHBOARD UTAMA -->
-        <div class="sidebar-heading">Menu Utama</div>
         <a href="<?= base_url('index.php') ?>" class="nav-link-mbb <?= $currentModule === 'dashboard' ? 'active' : '' ?>">
             <i class="bi bi-grid-1x2-fill"></i>
             <span>Dashboard</span>
         </a>
 
         <!-- 2. ORGANISASI & SDM (DROPDOWN) -->
-        <div class="sidebar-heading">Struktur & Personalia</div>
         <button class="sidebar-dropdown-toggle <?= $isOrgActive ? 'active' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#menuOrg" aria-expanded="<?= $isOrgActive ? 'true' : 'false' ?>" aria-controls="menuOrg">
-            <span class="d-flex align-items-center">
-                <i class="bi bi-people-fill me-2 fs-6"></i>
+            <span class="menu-left">
+                <i class="bi bi-people-fill"></i>
                 <span>Organisasi & SDM</span>
             </span>
             <i class="bi bi-chevron-down chevron-icon"></i>
@@ -163,10 +180,9 @@ $isSetActive = in_array($currentModule, $setModules);
         </div>
 
         <!-- 3. LINI USAHA MBB (DROPDOWN) -->
-        <div class="sidebar-heading">Operasional Bisnis</div>
         <button class="sidebar-dropdown-toggle <?= $isBizActive ? 'active' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#menuBiz" aria-expanded="<?= $isBizActive ? 'true' : 'false' ?>" aria-controls="menuBiz">
-            <span class="d-flex align-items-center">
-                <i class="bi bi-briefcase-fill me-2 fs-6"></i>
+            <span class="menu-left">
+                <i class="bi bi-briefcase-fill"></i>
                 <span>Lini Usaha MBB</span>
             </span>
             <i class="bi bi-chevron-down chevron-icon"></i>
@@ -201,10 +217,9 @@ $isSetActive = in_array($currentModule, $setModules);
         </div>
 
         <!-- 4. ADMINISTRASI & KEUANGAN (DROPDOWN) -->
-        <div class="sidebar-heading">Tata Kelola & Keuangan</div>
         <button class="sidebar-dropdown-toggle <?= $isAdmActive ? 'active' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#menuAdm" aria-expanded="<?= $isAdmActive ? 'true' : 'false' ?>" aria-controls="menuAdm">
-            <span class="d-flex align-items-center">
-                <i class="bi bi-cash-stack me-2 fs-6"></i>
+            <span class="menu-left">
+                <i class="bi bi-cash-stack"></i>
                 <span>Administrasi & Keuangan</span>
             </span>
             <i class="bi bi-chevron-down chevron-icon"></i>
@@ -236,10 +251,9 @@ $isSetActive = in_array($currentModule, $setModules);
 
         <!-- 5. SISTEM & PENGATURAN (DROPDOWN) -->
         <?php if (Permission::can('users.manage') || Permission::can('company.manage')): ?>
-        <div class="sidebar-heading">Konfigurasi</div>
         <button class="sidebar-dropdown-toggle <?= $isSetActive ? 'active' : '' ?>" type="button" data-bs-toggle="collapse" data-bs-target="#menuSettings" aria-expanded="<?= $isSetActive ? 'true' : 'false' ?>" aria-controls="menuSettings">
-            <span class="d-flex align-items-center">
-                <i class="bi bi-gear-fill me-2 fs-6"></i>
+            <span class="menu-left">
+                <i class="bi bi-gear-fill"></i>
                 <span>Sistem & Pengaturan</span>
             </span>
             <i class="bi bi-chevron-down chevron-icon"></i>
@@ -268,7 +282,7 @@ $isSetActive = in_array($currentModule, $setModules);
 
         <!-- 6. DEVELOPER SPACE (KHUSUS MAUL) -->
         <?php if (Permission::isDeveloper()): ?>
-        <div class="sidebar-heading text-info pt-3">Developer Space</div>
+        <div class="my-3 border-top border-secondary border-opacity-25"></div>
         <a href="<?= base_url('modules/developer/index.php') ?>" class="nav-link-mbb <?= $currentModule === 'developer' ? 'active' : '' ?>" style="background: rgba(6, 182, 212, 0.12); border-left: 3px solid #06b6d4; border-radius: 4px;">
             <i class="bi bi-terminal-fill text-info"></i>
             <span class="text-white fw-bold">Portal Developer</span>

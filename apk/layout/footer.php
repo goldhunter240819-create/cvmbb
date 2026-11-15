@@ -37,8 +37,130 @@ $localIp = gethostbyname(gethostname());
 <!-- Bootstrap Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- PWA Service Worker -->
+<!-- SweetAlert2 11 Bundle JS -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Intercept Logout dengan SweetAlert2 Modern
+    document.querySelectorAll('.btn-logout-confirm, a[href*="logout.php"]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetUrl = this.getAttribute('href');
+            Swal.fire({
+                title: 'Konfirmasi Keluar',
+                text: 'Apakah Anda yakin ingin keluar dari aplikasi MBB Mobile?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="bi bi-box-arrow-right me-1"></i> Ya, Keluar',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0'
+                }
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    window.location.href = targetUrl;
+                }
+            });
+        });
+    });
+
+    // 2. Intercept Confirm Delete dengan SweetAlert2
+    document.querySelectorAll('.btn-confirm-delete, [data-confirm]').forEach(function (button) {
+        button.addEventListener('click', function (e) {
+            e.preventDefault();
+            const form = this.closest('form');
+            const message = this.getAttribute('data-confirm') || 'Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.';
+            
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: message,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Ya, Hapus',
+                cancelButtonText: 'Batal',
+                reverseButtons: true,
+                focusCancel: true,
+                customClass: {
+                    popup: 'rounded-4 shadow-lg border-0'
+                }
+            }).then(function (result) {
+                if (result.isConfirmed) {
+                    if (form) {
+                        form.submit();
+                    } else if (button.tagName === 'A' && button.getAttribute('href')) {
+                        window.location.href = button.getAttribute('href');
+                    }
+                }
+            });
+        });
+    });
+
+    // 3. PWA Install Prompt Handler
+    let deferredPWA = null;
+    const pwaButtons = document.querySelectorAll('.btn-pwa-install');
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        deferredPWA = e;
+        pwaButtons.forEach(btn => btn.classList.remove('d-none'));
+    });
+
+    pwaButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            if (deferredPWA) {
+                deferredPWA.prompt();
+                deferredPWA.userChoice.then(function (choiceResult) {
+                    if (choiceResult.outcome === 'accepted') {
+                        Swal.fire({
+                            title: 'Sedang Memasang...',
+                            text: 'Aplikasi MBB Mobile sedang ditambahkan ke layar utama HP Anda.',
+                            icon: 'success',
+                            confirmButtonColor: '#1a56db'
+                        });
+                    }
+                    deferredPWA = null;
+                });
+            } else {
+                const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+                if (isIOS) {
+                    Swal.fire({
+                        title: 'Pasang di iPhone / iPad',
+                        html: '<div class="text-start small text-muted"><p class="mb-2">1. Ketuk ikon <strong>Bagikan / Share</strong> (kotak tanda panah ke atas) di menu Safari bawah.</p><p class="mb-2">2. Gulir ke bawah lalu pilih <strong>"Tambahkan ke Layar Utama" (Add to Home Screen)</strong>.</p><p class="mb-0">3. Ketuk <strong>Tambah</strong> di pojok kanan atas.</p></div>',
+                        icon: 'info',
+                        confirmButtonText: 'Mengerti',
+                        confirmButtonColor: '#1a56db'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Instal Aplikasi MBB',
+                        html: '<p class="small text-muted mb-0">Ketuk ikon menu titik tiga (⋮) di pojok kanan atas browser Anda, lalu pilih <strong>"Instal aplikasi"</strong> atau <strong>"Tambahkan ke Layar Utama"</strong>.</p>',
+                        icon: 'info',
+                        confirmButtonText: 'Siap',
+                        confirmButtonColor: '#1a56db'
+                    });
+                }
+            }
+        });
+    });
+
+    window.addEventListener('appinstalled', function () {
+        Swal.fire({
+            title: 'Berhasil Terpasang!',
+            text: 'Aplikasi MBB Mobile kini sudah aktif di layar utama HP Anda!',
+            icon: 'success',
+            confirmButtonColor: '#1a56db'
+        });
+    });
+});
+
+// PWA Service Worker Registration
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('<?= base_url('sw.js') ?>').catch(err => console.log(err));
 }

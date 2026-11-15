@@ -339,14 +339,8 @@ $companyAddress = get_company_setting('company_address', 'Air Hitam, Lampung Bar
         </div>
     </div>
 
-    <!-- BAWAH: FOOTER & SWITCH DESKTOP -->
+    <!-- BAWAH: FOOTER -->
     <div class="mobile-login-footer">
-        <div class="mb-2">
-            <a href="<?= base_url('login.php') ?>" class="text-decoration-none text-primary fw-semibold d-inline-flex align-items-center gap-1">
-                <i class="bi bi-display"></i>
-                <span>Beralih ke Versi Desktop Web</span>
-            </a>
-        </div>
         <div class="text-muted small" style="font-size: 0.72rem;">
             <?= e($companyName) ?><br>
             <?= e($companyAddress) ?>

@@ -1,0 +1,31 @@
+{
+  "name": "MBB Mobile - CV. Maju Berkah Bersama",
+  "short_name": "MBB Mobile",
+  "description": "Aplikasi Manajemen Lapangan & Kasir Lapangan CV. MBB",
+  "start_url": "./index.php",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1e3a",
+  "theme_color": "#0d1e3a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "../assets/images/logoapk.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../assets/images/logoapk.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "../logoapk.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

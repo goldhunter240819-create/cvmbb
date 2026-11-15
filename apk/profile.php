@@ -110,8 +110,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <span class="badge bg-success-subtle text-success">REALTIME (AKTIF)</span>
             </div>
             <div class="list-group-item d-flex justify-content-between px-0 py-2">
-                <span class="text-muted">Akses Jaringan HP (Wi-Fi)</span>
-                <span class="font-monospace fw-semibold text-primary">http://<?= $localIp ?>/cvmbb/apk/</span>
+                <span class="text-muted">Akses Langsung Mobile</span>
+                <span class="font-monospace fw-semibold text-primary"><?= e(base_url('apk/')) ?></span>
             </div>
             <div class="list-group-item d-flex justify-content-between px-0 py-2 border-0">
                 <span class="text-muted">Mode Tampilan</span>
@@ -120,12 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         </div>
     </div>
 
-    <!-- Tombol Beralih Mode & Keluar -->
+    <!-- Tombol Aksi PWA & Keluar -->
     <div class="d-grid gap-2 mb-4">
-        <a href="<?= base_url('index.php') ?>" class="btn btn-outline-secondary py-2 fw-semibold" style="border-radius: 12px; font-size: 0.85rem;">
-            <i class="bi bi-display me-2"></i>Buka Versi Desktop Web
-        </a>
-        <a href="<?= base_url('logout.php?from=apk') ?>" class="btn btn-outline-danger py-2 fw-semibold" style="border-radius: 12px; font-size: 0.85rem;" onclick="return confirm('Apakah Anda yakin ingin keluar dari aplikasi mobile?')">
+        <button type="button" class="btn btn-primary py-2 fw-semibold btn-pwa-install shadow-sm" style="border-radius: 12px; font-size: 0.88rem;">
+            <i class="bi bi-cloud-arrow-down-fill me-2"></i>Pasang Aplikasi ke Layar HP (PWA)
+        </button>
+        <a href="<?= base_url('logout.php?from=apk') ?>" class="btn btn-outline-danger py-2 fw-semibold btn-logout-confirm" style="border-radius: 12px; font-size: 0.85rem;">
             <i class="bi bi-box-arrow-right me-2"></i>Keluar (Logout)
         </a>
     </div>

@@ -31,12 +31,73 @@ document.addEventListener('DOMContentLoaded', function () {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // 3. Confirm Delete Dialog Helper
-    document.querySelectorAll('.btn-confirm-delete').forEach(function (button) {
+    // 3. Confirm Delete & Action Dialog Helper (SweetAlert2)
+    document.querySelectorAll('.btn-confirm-delete, [data-confirm]').forEach(function (button) {
         button.addEventListener('click', function (e) {
+            e.preventDefault();
+            const form = this.closest('form');
             const message = this.getAttribute('data-confirm') || 'Apakah Anda yakin ingin menghapus data ini? Tindakan ini tidak dapat dibatalkan.';
-            if (!confirm(message)) {
-                e.preventDefault();
+            
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Konfirmasi Tindakan',
+                    text: message,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Ya, Lanjutkan',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg border-0'
+                    }
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        if (form) {
+                            form.submit();
+                        } else if (button.tagName === 'A' && button.getAttribute('href')) {
+                            window.location.href = button.getAttribute('href');
+                        }
+                    }
+                });
+            } else {
+                if (confirm(message)) {
+                    if (form) form.submit();
+                    else if (button.tagName === 'A') window.location.href = button.getAttribute('href');
+                }
+            }
+        });
+    });
+
+    // 3.5 Intercept Logout with SweetAlert2
+    document.querySelectorAll('a[href*="logout.php"]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            const targetUrl = this.getAttribute('href');
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: 'Keluar dari Sistem?',
+                    text: 'Sesi Anda akan diakhiri. Pastikan semua transaksi sudah tersimpan.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="bi bi-box-arrow-right me-1"></i> Ya, Keluar',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true,
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'rounded-4 shadow-lg border-0'
+                    }
+                }).then(function (result) {
+                    if (result.isConfirmed) {
+                        window.location.href = targetUrl;
+                    }
+                });
+            } else {
+                window.location.href = targetUrl;
             }
         });
     });
