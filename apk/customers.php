@@ -121,192 +121,204 @@ $customers = $db->query("SELECT * FROM customers ORDER BY name ASC")->fetchAll()
 
 <!-- TAB 1: MITRA PETANI -->
 <div id="sectionFarmers" style="<?= $tab === 'farmers' ? '' : 'display: none;' ?>">
-    <div class="px-3 pb-2 text-muted small fw-bold text-uppercase d-flex justify-content-between align-items-center" style="letter-spacing: 0.5px; font-size: 0.72rem;">
-        <span>Daftar Mitra Petani Kopi</span>
-        <button type="button" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2 fw-semibold" style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#modalAddFarmer">
-            <i class="bi bi-plus-lg me-1"></i>+ Tambah Petani
-        </button>
-    </div>
-
-    <?php if (empty($farmers)): ?>
-        <div class="mobile-card text-center py-5 text-muted">
-            <i class="bi bi-person-x fs-1 d-block mb-2 opacity-50"></i>
-            Belum ada mitra petani tersimpan.<br>
-            <button type="button" class="btn btn-sm btn-success rounded-pill mt-3 px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalAddFarmer">
-                <i class="bi bi-plus-lg me-1"></i>Tambah Mitra Pertama
+    <div class="mobile-card">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div>
+                <span class="fw-bold text-dark" style="font-size: 0.88rem;">Daftar Mitra Petani</span>
+                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 ms-1" style="font-size: 0.65rem;"><?= count($farmers) ?> Kontak</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold shadow-sm" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#modalAddFarmer">
+                <i class="bi bi-plus-lg me-1"></i>Tambah Petani
             </button>
         </div>
-    <?php else: ?>
-        <div id="farmersListContainer">
-            <?php foreach ($farmers as $f): ?>
-                <div class="mobile-card contact-card-item mb-2" data-search="<?= strtolower(e($f['name'] . ' ' . ($f['village'] ?? '') . ' ' . ($f['phone'] ?? '') . ' ' . ($f['farmer_group'] ?? ''))) ?>">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="rounded-circle bg-success-subtle text-success fw-bold d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 1rem; flex-shrink: 0;">
-                                <?= strtoupper(substr($f['name'], 0, 2)) ?>
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark" style="font-size: 0.92rem; line-height: 1.2;">
-                                    <?= e($f['name']) ?>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.72rem;">
-                                    <span class="badge bg-light text-success border" style="font-size: 0.62rem;"><?= e($f['code']) ?></span>
-                                    <?php if (!empty($f['village'])): ?>
-                                        &bull; <i class="bi bi-geo-alt me-1"></i>Desa <?= e($f['village']) ?>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-light rounded-circle p-0" style="width: 28px; height: 28px;" data-bs-toggle="dropdown">
-                                <i class="bi bi-three-dots-vertical"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.8rem;">
-                                <li>
-                                    <a class="dropdown-item text-success fw-semibold" href="<?= base_url('apk/coffee_buy.php?farmer_name=' . urlencode($f['name']) . '&open_add=1') ?>">
-                                        <i class="bi bi-cart-plus me-2"></i>Timbang Kopi
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form method="POST" action="">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="delete_farmer">
-                                        <input type="hidden" name="id" value="<?= $f['id'] ?>">
-                                        <button type="button" class="dropdown-item text-danger btn-confirm-delete" data-confirm="Hapus data mitra petani <?= e($f['name']) ?>?">
-                                            <i class="bi bi-trash me-2"></i>Hapus Mitra
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
 
-                    <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 0.78rem;">
-                        <div class="text-muted">
-                            <?php if (!empty($f['phone'])): ?>
-                                <i class="bi bi-telephone me-1"></i><?= e($f['phone']) ?>
-                            <?php else: ?>
-                                <span>No HP belum diisi</span>
-                            <?php endif; ?>
+        <?php if (empty($farmers)): ?>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-person-x fs-1 d-block mb-2 opacity-50"></i>
+                <div class="fw-semibold text-dark mb-1">Belum ada mitra petani tersimpan</div>
+                <div class="small text-muted mb-3" style="max-width: 320px; margin: 0 auto;">Daftarkan petani mitra Anda agar saat timbang kopi datanya langsung ditarik otomatis.</div>
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddFarmer">
+                    <i class="bi bi-plus-lg me-1"></i>Daftarkan Petani Sekarang
+                </button>
+            </div>
+        <?php else: ?>
+            <div id="farmersListContainer" class="d-flex flex-column gap-2">
+                <?php foreach ($farmers as $f): ?>
+                    <div class="contact-card-item p-3 rounded-3 border bg-light bg-opacity-50" data-search="<?= strtolower(e($f['name'] . ' ' . ($f['village'] ?? '') . ' ' . ($f['phone'] ?? '') . ' ' . ($f['farmer_group'] ?? ''))) ?>">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-success-subtle text-success fw-bold d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 1rem; flex-shrink: 0;">
+                                    <?= strtoupper(substr($f['name'], 0, 2)) ?>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.92rem; line-height: 1.2;">
+                                        <?= e($f['name']) ?>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                        <span class="badge bg-white text-success border border-success border-opacity-25" style="font-size: 0.62rem;"><?= e($f['code']) ?></span>
+                                        <?php if (!empty($f['village'])): ?>
+                                            &bull; <i class="bi bi-geo-alt me-1"></i>Desa <?= e($f['village']) ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light rounded-circle p-0" style="width: 28px; height: 28px;" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.8rem;">
+                                    <li>
+                                        <a class="dropdown-item text-success fw-semibold" href="<?= base_url('apk/coffee_buy.php?farmer_name=' . urlencode($f['name']) . '&open_add=1') ?>">
+                                            <i class="bi bi-cart-plus me-2"></i>Timbang Kopi
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="POST" action="">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="action" value="delete_farmer">
+                                            <input type="hidden" name="id" value="<?= $f['id'] ?>">
+                                            <button type="button" class="dropdown-item text-danger btn-confirm-delete" data-confirm="Hapus data mitra petani <?= e($f['name']) ?>?">
+                                                <i class="bi bi-trash me-2"></i>Hapus Mitra
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <?php if (!empty($f['phone'])): ?>
-                                <?php 
-                                    $cleanPhone = preg_replace('/[^0-9]/', '', $f['phone']);
-                                    if (substr($cleanPhone, 0, 1) === '0') $cleanPhone = '62' . substr($cleanPhone, 1);
-                                ?>
-                                <a href="https://wa.me/<?= $cleanPhone ?>" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.72rem;">
-                                    <i class="bi bi-whatsapp me-1"></i>WA
+
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 0.78rem;">
+                            <div class="text-muted">
+                                <?php if (!empty($f['phone'])): ?>
+                                    <i class="bi bi-telephone me-1"></i><?= e($f['phone']) ?>
+                                <?php else: ?>
+                                    <span>No HP belum diisi</span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <?php if (!empty($f['phone'])): ?>
+                                    <?php 
+                                        $cleanPhone = preg_replace('/[^0-9]/', '', $f['phone']);
+                                        if (substr($cleanPhone, 0, 1) === '0') $cleanPhone = '62' . substr($cleanPhone, 1);
+                                    ?>
+                                    <a href="https://wa.me/<?= $cleanPhone ?>" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.72rem;">
+                                        <i class="bi bi-whatsapp me-1"></i>WA
+                                    </a>
+                                    <a href="tel:<?= e($f['phone']) ?>" class="btn btn-sm btn-light rounded-pill px-2 py-0 fw-semibold border" style="font-size: 0.72rem;">
+                                        <i class="bi bi-telephone-fill me-1"></i>Telepon
+                                    </a>
+                                <?php endif; ?>
+                                <a href="<?= base_url('apk/coffee_buy.php?farmer_name=' . urlencode($f['name']) . '&open_add=1') ?>" class="btn btn-sm btn-success rounded-pill px-2 py-0 fw-bold" style="font-size: 0.72rem;">
+                                    <i class="bi bi-cart-plus me-1"></i>Beli
                                 </a>
-                                <a href="tel:<?= e($f['phone']) ?>" class="btn btn-sm btn-light rounded-pill px-2 py-0 fw-semibold border" style="font-size: 0.72rem;">
-                                    <i class="bi bi-telephone-fill me-1"></i>Telepon
-                                </a>
-                            <?php endif; ?>
-                            <a href="<?= base_url('apk/coffee_buy.php?farmer_name=' . urlencode($f['name']) . '&open_add=1') ?>" class="btn btn-sm btn-success rounded-pill px-2 py-0 fw-bold" style="font-size: 0.72rem;">
-                                <i class="bi bi-cart-plus me-1"></i>Beli
-                            </a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <!-- TAB 2: PELANGGAN / BUYER -->
 <div id="sectionCustomers" style="<?= $tab === 'customers' ? '' : 'display: none;' ?>">
-    <div class="px-3 pb-2 text-muted small fw-bold text-uppercase d-flex justify-content-between align-items-center" style="letter-spacing: 0.5px; font-size: 0.72rem;">
-        <span>Daftar Pelanggan & Perusahaan Buyer</span>
-        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 fw-semibold" style="font-size: 0.7rem;" data-bs-toggle="modal" data-bs-target="#modalAddCustomer">
-            <i class="bi bi-plus-lg me-1"></i>+ Tambah Pelanggan
-        </button>
-    </div>
-
-    <?php if (empty($customers)): ?>
-        <div class="mobile-card text-center py-5 text-muted">
-            <i class="bi bi-building-x fs-1 d-block mb-2 opacity-50"></i>
-            Belum ada pelanggan tersimpan.<br>
-            <button type="button" class="btn btn-sm btn-primary rounded-pill mt-3 px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#modalAddCustomer">
-                <i class="bi bi-plus-lg me-1"></i>Tambah Pelanggan Pertama
+    <div class="mobile-card">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div>
+                <span class="fw-bold text-dark" style="font-size: 0.88rem;">Daftar Pelanggan & Buyer</span>
+                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 ms-1" style="font-size: 0.65rem;"><?= count($customers) ?> Kontak</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold shadow-sm" style="font-size: 0.74rem;" data-bs-toggle="modal" data-bs-target="#modalAddCustomer">
+                <i class="bi bi-plus-lg me-1"></i>Tambah Pelanggan
             </button>
         </div>
-    <?php else: ?>
-        <div id="customersListContainer">
-            <?php foreach ($customers as $c): ?>
-                <div class="mobile-card contact-card-item mb-2" data-search="<?= strtolower(e($c['name'] . ' ' . ($c['customer_type'] ?? '') . ' ' . ($c['phone'] ?? '') . ' ' . ($c['address'] ?? ''))) ?>">
-                    <div class="d-flex justify-content-between align-items-start mb-2">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 1rem; flex-shrink: 0;">
-                                <?= strtoupper(substr($c['name'], 0, 2)) ?>
-                            </div>
-                            <div>
-                                <div class="fw-bold text-dark" style="font-size: 0.92rem; line-height: 1.2;">
-                                    <?= e($c['name']) ?>
-                                </div>
-                                <div class="text-muted" style="font-size: 0.72rem;">
-                                    <span class="badge bg-light text-primary border" style="font-size: 0.62rem;"><?= e($c['customer_type'] ?: 'Buyer') ?></span>
-                                    <?php if (!empty($c['address'])): ?>
-                                        &bull; <i class="bi bi-geo-alt me-1"></i><?= e($c['address']) ?>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-light rounded-circle p-0" style="width: 28px; height: 28px;" data-bs-toggle="dropdown">
-                                <i class="bi bi-three-dots-vertical"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.8rem;">
-                                <li>
-                                    <a class="dropdown-item text-primary fw-semibold" href="<?= base_url('apk/coffee_sell.php?customer_name=' . urlencode($c['name']) . '&open_add=1') ?>">
-                                        <i class="bi bi-truck me-2"></i>Faktur Penjualan
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <form method="POST" action="">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="action" value="delete_customer">
-                                        <input type="hidden" name="id" value="<?= $c['id'] ?>">
-                                        <button type="button" class="dropdown-item text-danger btn-confirm-delete" data-confirm="Hapus data pelanggan <?= e($c['name']) ?>?">
-                                            <i class="bi bi-trash me-2"></i>Hapus Pelanggan
-                                        </button>
-                                    </form>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
 
-                    <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 0.78rem;">
-                        <div class="text-muted">
-                            <?php if (!empty($c['phone'])): ?>
-                                <i class="bi bi-telephone me-1"></i><?= e($c['phone']) ?>
-                            <?php else: ?>
-                                <span>No kontak belum diisi</span>
-                            <?php endif; ?>
+        <?php if (empty($customers)): ?>
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-building-x fs-1 d-block mb-2 opacity-50"></i>
+                <div class="fw-semibold text-dark mb-1">Belum ada pelanggan tersimpan</div>
+                <div class="small text-muted mb-3" style="max-width: 320px; margin: 0 auto;">Daftarkan pabrik, eksportir, atau toko mitra Anda untuk mempermudah penjualan kopi.</div>
+                <button type="button" class="btn btn-sm btn-success rounded-pill px-3 py-1 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAddCustomer">
+                    <i class="bi bi-plus-lg me-1"></i>Daftarkan Pelanggan Sekarang
+                </button>
+            </div>
+        <?php else: ?>
+            <div id="customersListContainer" class="d-flex flex-column gap-2">
+                <?php foreach ($customers as $c): ?>
+                    <div class="contact-card-item p-3 rounded-3 border bg-light bg-opacity-50" data-search="<?= strtolower(e($c['name'] . ' ' . ($c['customer_type'] ?? '') . ' ' . ($c['phone'] ?? '') . ' ' . ($c['address'] ?? ''))) ?>">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 40px; height: 40px; font-size: 1rem; flex-shrink: 0;">
+                                    <?= strtoupper(substr($c['name'], 0, 2)) ?>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.92rem; line-height: 1.2;">
+                                        <?= e($c['name']) ?>
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.72rem;">
+                                        <span class="badge bg-white text-primary border border-primary border-opacity-25" style="font-size: 0.62rem;"><?= e($c['customer_type'] ?: 'Buyer') ?></span>
+                                        <?php if (!empty($c['address'])): ?>
+                                            &bull; <i class="bi bi-geo-alt me-1"></i><?= e($c['address']) ?>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light rounded-circle p-0" style="width: 28px; height: 28px;" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.8rem;">
+                                    <li>
+                                        <a class="dropdown-item text-primary fw-semibold" href="<?= base_url('apk/coffee_sell.php?customer_name=' . urlencode($c['name']) . '&open_add=1') ?>">
+                                            <i class="bi bi-truck me-2"></i>Faktur Penjualan
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form method="POST" action="">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="action" value="delete_customer">
+                                            <input type="hidden" name="id" value="<?= $c['id'] ?>">
+                                            <button type="button" class="dropdown-item text-danger btn-confirm-delete" data-confirm="Hapus data pelanggan <?= e($c['name']) ?>?">
+                                                <i class="bi bi-trash me-2"></i>Hapus Pelanggan
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
-                        <div class="d-flex gap-2">
-                            <?php if (!empty($c['phone'])): ?>
-                                <?php 
-                                    $cleanPhone = preg_replace('/[^0-9]/', '', $c['phone']);
-                                    if (substr($cleanPhone, 0, 1) === '0') $cleanPhone = '62' . substr($cleanPhone, 1);
-                                ?>
-                                <a href="https://wa.me/<?= $cleanPhone ?>" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.72rem;">
-                                    <i class="bi bi-whatsapp me-1"></i>WA
+
+                        <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 0.78rem;">
+                            <div class="text-muted">
+                                <?php if (!empty($c['phone'])): ?>
+                                    <i class="bi bi-telephone me-1"></i><?= e($c['phone']) ?>
+                                <?php else: ?>
+                                    <span>No kontak belum diisi</span>
+                                <?php endif; ?>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <?php if (!empty($c['phone'])): ?>
+                                    <?php 
+                                        $cleanPhone = preg_replace('/[^0-9]/', '', $c['phone']);
+                                        if (substr($cleanPhone, 0, 1) === '0') $cleanPhone = '62' . substr($cleanPhone, 1);
+                                    ?>
+                                    <a href="https://wa.me/<?= $cleanPhone ?>" target="_blank" class="btn btn-sm btn-outline-success rounded-pill px-2 py-0 fw-semibold" style="font-size: 0.72rem;">
+                                        <i class="bi bi-whatsapp me-1"></i>WA
+                                    </a>
+                                    <a href="tel:<?= e($c['phone']) ?>" class="btn btn-sm btn-light rounded-pill px-2 py-0 fw-semibold border" style="font-size: 0.72rem;">
+                                        <i class="bi bi-telephone-fill me-1"></i>Telepon
+                                    </a>
+                                <?php endif; ?>
+                                <a href="<?= base_url('apk/coffee_sell.php?customer_name=' . urlencode($c['name']) . '&open_add=1') ?>" class="btn btn-sm btn-primary rounded-pill px-2 py-0 fw-bold" style="font-size: 0.72rem;">
+                                    <i class="bi bi-truck me-1"></i>Jual
                                 </a>
-                                <a href="tel:<?= e($c['phone']) ?>" class="btn btn-sm btn-light rounded-pill px-2 py-0 fw-semibold border" style="font-size: 0.72rem;">
-                                    <i class="bi bi-telephone-fill me-1"></i>Telepon
-                                </a>
-                            <?php endif; ?>
-                            <a href="<?= base_url('apk/coffee_sell.php?customer_name=' . urlencode($c['name']) . '&open_add=1') ?>" class="btn btn-sm btn-primary rounded-pill px-2 py-0 fw-bold" style="font-size: 0.72rem;">
-                                <i class="bi bi-truck me-1"></i>Jual
-                            </a>
+                            </div>
                         </div>
                     </div>
-                </div>
-            <?php endforeach; ?>
-        </div>
-    <?php endif; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <!-- FLOATING ACTION BUTTON (FAB) -->

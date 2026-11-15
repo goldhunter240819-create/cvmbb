@@ -257,7 +257,7 @@ $kpi = $db->query("
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <span class="small text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Pilih Mitra (<?= count($farmersList) ?> Kontak)</span>
                     <button type="button" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2 fw-semibold" style="font-size: 0.72rem;" onclick="showAddFarmerForm()">
-                        <i class="bi bi-plus-lg me-1"></i>+ Mitra Baru
+                        <i class="bi bi-plus-lg me-1"></i>Mitra Baru
                     </button>
                 </div>
 

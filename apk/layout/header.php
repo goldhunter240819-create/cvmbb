@@ -184,7 +184,10 @@ $localIp         = gethostbyname(gethostname());
         .app-content-body {
             flex: 1;
             background-color: #f8fafc;
-            padding-bottom: 90px; /* Jarak aman di atas bottom bar */
+            padding-bottom: 95px; /* Jarak aman di atas bottom bar */
+        }
+        .app-top-navbar + .app-content-body {
+            padding-top: 16px;
         }
 
         /* Mobile Card & Container */
