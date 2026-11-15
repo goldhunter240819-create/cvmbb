@@ -26,7 +26,8 @@ Aplikasi **MBB BUSINESS MANAGEMENT SYSTEM** adalah Enterprise Resource Planning 
 
 | No | Tipe Akun | Username | Password | Role / Hak Akses | Status |
 |:---:|:---|:---|:---|:---|:---:|
-| 1 | **Administrator Sistem** | `admin` | `admin` | SUPER ADMIN (Akses Penuh) | Aktif |
+| 1 | **Developer Super Admin** | `Maul` | `Basenglah123.` | SUPER ADMIN (Akses Penuh) | Aktif |
+| 2 | **Administrator Sistem** | `admin` | `admin` | SUPER ADMIN (Akses Penuh) | Aktif |
 
 > [!NOTE]
 > Setelah berhasil masuk pertama kali, sangat disarankan untuk mengganti password default melalui menu **Profil > Ganti Password** di pojok kanan atas.
