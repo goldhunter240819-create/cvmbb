@@ -1,0 +1,7 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Jika domain khusus (seperti mbb.ghtech.my.id) masih menyertakan prefix /cvmbb/, redirect ke root /
+    RewriteCond %{REQUEST_URI} ^/cvmbb/(.*)$ [NC]
+    RewriteRule ^cvmbb/(.*)$ /$1 [R=301,L]
+</IfModule>

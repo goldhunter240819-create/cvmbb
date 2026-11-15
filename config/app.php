@@ -4,14 +4,31 @@
  * Application Configuration
  */
 
-// Menentukan Base URL secara dinamis agar portabel
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || ($_SERVER['SERVER_PORT'] ?? 80) == 443) ? "https://" : "http://";
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$scriptName = str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? ''));
+// 1. Deteksi Protokol (Mendukung Cloudflare Tunnel HTTPS)
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (!empty($_SERVER['HTTP_CF_VISITOR']) && strpos($_SERVER['HTTP_CF_VISITOR'], 'https') !== false)
+    || (($_SERVER['SERVER_PORT'] ?? 80) == 443);
 
-// Cari root direktori proyek
-$parts = explode('/', trim($scriptName, '/'));
-$baseFolder = !empty($parts[0]) ? '/' . $parts[0] . '/' : '/cvmbb/';
+$protocol = $isHttps ? "https://" : "http://";
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+
+// 2. Deteksi Root Folder Relatif terhadap DocumentRoot Apache
+$docRoot = !empty($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])) : '';
+$appRoot = str_replace('\\', '/', realpath(__DIR__ . '/..'));
+
+if (!empty($docRoot) && str_starts_with($appRoot, $docRoot)) {
+    $relative = trim(substr($appRoot, strlen($docRoot)), '/\\');
+    $baseFolder = !empty($relative) ? '/' . $relative . '/' : '/';
+} else {
+    // Jika diakses melalui subdomain khusus seperti mbb.ghtech.my.id (Cloudflare Tunnel)
+    if ($host !== 'localhost' && !str_starts_with($host, '127.0.0.1') && !str_starts_with($host, '192.168.')) {
+        $baseFolder = '/';
+    } else {
+        $baseFolder = '/cvmbb/';
+    }
+}
+
 $baseUrl = $protocol . $host . $baseFolder;
 
 return [
