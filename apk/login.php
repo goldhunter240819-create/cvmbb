@@ -213,29 +213,6 @@ $companyAddress = get_company_setting('company_address', 'Air Hitam, Lampung Bar
             box-shadow: 0 4px 12px rgba(26, 86, 219, 0.25);
         }
 
-        /* Biometric Button */
-        .btn-biometric {
-            width: 100%;
-            height: 46px;
-            background-color: #f8fafc;
-            border: 1.5px dashed #cbd5e1;
-            border-radius: 14px;
-            color: #475569;
-            font-size: 0.85rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 14px;
-            transition: all 0.15s ease;
-        }
-        .btn-biometric:hover, .btn-biometric:active {
-            background-color: #eff6ff;
-            border-color: #1a56db;
-            color: #1a56db;
-        }
-
         /* Footer Info */
         .mobile-login-footer {
             padding: 20px;
@@ -329,12 +306,6 @@ $companyAddress = get_company_setting('company_address', 'Air Hitam, Lampung Bar
                     <span>Masuk ke Aplikasi</span>
                     <i class="bi bi-arrow-right-circle-fill ms-2 fs-5"></i>
                 </button>
-
-                <!-- Tombol Shortcut Sidik Jari (Biometrik Similasi) -->
-                <button type="button" class="btn-biometric" id="bioBtn">
-                    <i class="bi bi-fingerprint text-primary fs-5"></i>
-                    <span>Masuk Cepat Biometrik</span>
-                </button>
             </form>
         </div>
     </div>
@@ -344,22 +315,6 @@ $companyAddress = get_company_setting('company_address', 'Air Hitam, Lampung Bar
         <div class="text-muted small" style="font-size: 0.72rem;">
             <?= e($companyName) ?><br>
             <?= e($companyAddress) ?>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Dialog Biometrik Interaktif -->
-<div class="modal fade" id="modalBio" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 border-0 p-4 text-center shadow">
-            <div class="mb-3">
-                <div class="rounded-circle bg-primary-subtle text-primary d-inline-flex align-items-center justify-content-center p-3" style="width: 72px; height: 72px;">
-                    <i class="bi bi-fingerprint display-5"></i>
-                </div>
-            </div>
-            <h6 class="fw-bold mb-1">Sensor Sidik Jari Siaga</h6>
-            <p class="text-muted small mb-3">Silakan gunakan username dan password Anda terlebih dahulu untuk mengaktifkan token perangkat ini.</p>
-            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4" data-bs-dismiss="modal">Mengerti</button>
         </div>
     </div>
 </div>
@@ -384,15 +339,6 @@ if (toggleBtn && passInput && toggleIcon) {
             toggleIcon.classList.remove('bi-eye');
             toggleIcon.classList.add('bi-eye-slash');
         }
-    });
-}
-
-// Biometric Prompt
-const bioBtn = document.getElementById('bioBtn');
-if (bioBtn) {
-    bioBtn.addEventListener('click', function() {
-        const modal = new bootstrap.Modal(document.getElementById('modalBio'));
-        modal.show();
     });
 }
 </script>
