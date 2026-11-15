@@ -180,16 +180,12 @@ $kpi = $db->query("
             </div>
             <div class="modal-body p-3">
                 <div class="mb-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label class="form-label small fw-bold mb-0">Nama Pembeli / Eksportir</label>
-                        <button type="button" class="btn btn-link btn-sm p-0 text-primary text-decoration-none fw-bold" style="font-size: 0.74rem;" onclick="openCustomerPicker()">
-                            <i class="bi bi-person-lines-fill me-1"></i>Pilih dari Buku Pelanggan &raquo;
-                        </button>
-                    </div>
-                    <div class="input-group input-group-sm">
-                        <input type="text" name="customer_name" id="sell_customer_name" list="customerList" class="form-control" placeholder="Ketik nama atau pilih pelanggan..." value="<?= e($_GET['customer_name'] ?? '') ?>" required autocomplete="off">
-                        <button type="button" class="btn btn-outline-primary" onclick="openCustomerPicker()" title="Buka Buku Pelanggan">
-                            <i class="bi bi-book"></i>
+                    <label class="form-label small fw-bold mb-1 d-block">Nama Pembeli / Eksportir</label>
+                    <div class="input-group">
+                        <input type="text" name="customer_name" id="sell_customer_name" list="customerList" class="form-control form-control-sm" placeholder="Ketik atau pilih pembeli..." value="<?= e($_GET['customer_name'] ?? '') ?>" required autocomplete="off">
+                        <button type="button" class="btn btn-sm btn-primary px-2 fw-semibold d-flex align-items-center gap-1" onclick="openCustomerPicker()" title="Buka Buku Pelanggan">
+                            <i class="bi bi-person-lines-fill"></i>
+                            <span style="font-size: 0.72rem;">Buku</span>
                         </button>
                     </div>
                     <datalist id="customerList">
@@ -231,9 +227,17 @@ $kpi = $db->query("
                     <input type="text" name="notes" class="form-control form-control-sm" placeholder="Cth: Muat Truk Colt Diesel BE 8123 BA, Kirim ke Panjang">
                 </div>
             </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-sm btn-primary px-3 fw-bold">Simpan Faktur Penjualan</button>
+            <div class="modal-footer border-0 pt-1 pb-3 px-3">
+                <div class="row g-2 w-100">
+                    <div class="col-4">
+                        <button type="button" class="btn btn-sm btn-light w-100 text-muted fw-semibold py-2" data-bs-dismiss="modal">Batal</button>
+                    </div>
+                    <div class="col-8">
+                        <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold py-2 shadow-sm">
+                            <i class="bi bi-check-lg me-1"></i>Simpan Faktur
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
     </div>

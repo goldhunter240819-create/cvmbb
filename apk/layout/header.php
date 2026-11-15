@@ -290,6 +290,18 @@ $localIp         = gethostbyname(gethostname());
                 right: 18px;
             }
         }
+        @media (max-width: 576px) {
+            .modal-dialog {
+                margin: 12px auto !important;
+                max-width: calc(100% - 24px) !important;
+            }
+            .modal-dialog-centered {
+                min-height: calc(100% - 24px) !important;
+            }
+            .modal-content {
+                border-radius: 18px !important;
+            }
+        }
         @media (max-width: 430px) {
             body {
                 font-size: 0.80rem !important;

@@ -33,6 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $netWeight = max(0, $grossWeight - $tareWeight);
         $grandTotal = $netWeight * $pricePerKg;
 
+        $paymentStatus = sanitize($_POST['payment_status'] ?? 'LUNAS');
+        if (!in_array($paymentStatus, ['LUNAS', 'BELUM_BAYAR', 'SEBAGIAN'])) {
+            $paymentStatus = 'LUNAS';
+        }
+        $paidAmount = ($paymentStatus === 'LUNAS') ? $grandTotal : 0;
+
         if ($netWeight > 0 && $pricePerKg > 0) {
             $fStmt = $db->prepare("SELECT id FROM farmers WHERE name = ? LIMIT 1");
             $fStmt->execute([$farmerName]);
@@ -46,12 +52,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO purchases (
                     invoice_number, purchase_date, farmer_id, gross_weight, tare_weight, net_weight,
                     price_per_kg, total_amount, grand_total, paid_amount, payment_status, notes, created_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'LUNAS', ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $invoiceNumber, $purchaseDate, $farmerId, $grossWeight, $tareWeight, $netWeight,
-                $pricePerKg, $grandTotal, $grandTotal, $grandTotal, $notes, Auth::id()
+                $pricePerKg, $grandTotal, $grandTotal, $paidAmount, $paymentStatus, $notes, Auth::id()
             ]);
+
+            if ($paymentStatus === 'BELUM_BAYAR') {
+                $db->prepare("
+                    INSERT INTO payables (reference_number, business_line, creditor_name, total_amount, paid_amount, remaining_amount, status, notes)
+                    VALUES (?, 'Kopi Petani', ?, ?, 0, ?, 'BELUM_LUNAS', ?)
+                ")->execute([$invoiceNumber, $farmerName, $grandTotal, $grandTotal, $notes]);
+            }
 
             log_audit('CREATE_COFFEE_PURCHASE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat pembelian {$invoiceNumber} dari {$farmerName}");
             flash_set('success', "Pembelian dari {$farmerName} berhasil dicatat!");
@@ -144,7 +157,9 @@ $kpi = $db->query("
                         </div>
                     </div>
                 </div>
-                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.68rem;">LUNAS</span>
+                <span class="badge <?= ($p['payment_status'] ?? '') === 'BELUM_BAYAR' ? 'bg-danger-subtle text-danger border border-danger border-opacity-25' : 'bg-success-subtle text-success border border-success border-opacity-25' ?> px-2 py-1" style="font-size: 0.68rem;">
+                    <?= ($p['payment_status'] ?? '') === 'BELUM_BAYAR' ? 'HUTANG' : 'LUNAS' ?>
+                </span>
             </div>
             
             <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 0.8rem;">
@@ -178,16 +193,12 @@ $kpi = $db->query("
             </div>
             <div class="modal-body p-3">
                 <div class="mb-2">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <label class="form-label small fw-bold mb-0">Nama Petani / Pemasok</label>
-                        <button type="button" class="btn btn-link btn-sm p-0 text-success text-decoration-none fw-bold" style="font-size: 0.74rem;" onclick="openFarmerPicker()">
-                            <i class="bi bi-person-lines-fill me-1"></i>Pilih dari Buku Mitra &raquo;
-                        </button>
-                    </div>
-                    <div class="input-group input-group-sm">
-                        <input type="text" name="farmer_name" id="buy_farmer_name" list="farmerList" class="form-control" placeholder="Ketik nama atau pilih dari buku..." value="<?= e($_GET['farmer_name'] ?? '') ?>" required autocomplete="off">
-                        <button type="button" class="btn btn-outline-success" onclick="openFarmerPicker()" title="Buka Buku Kontak Petani">
-                            <i class="bi bi-book"></i>
+                    <label class="form-label small fw-bold mb-1 d-block">Nama Petani / Pemasok</label>
+                    <div class="input-group">
+                        <input type="text" name="farmer_name" id="buy_farmer_name" list="farmerList" class="form-control form-control-sm" placeholder="Ketik atau pilih petani..." value="<?= e($_GET['farmer_name'] ?? '') ?>" required autocomplete="off">
+                        <button type="button" class="btn btn-sm btn-success px-2 fw-semibold d-flex align-items-center gap-1" onclick="openFarmerPicker()" title="Buka Buku Kontak Petani">
+                            <i class="bi bi-person-lines-fill"></i>
+                            <span style="font-size: 0.72rem;">Buku</span>
                         </button>
                     </div>
                     <datalist id="farmerList">
@@ -220,18 +231,36 @@ $kpi = $db->query("
                         <input type="number" name="price_per_kg" id="b_price" class="form-control form-control-sm" placeholder="Rp" required>
                     </div>
                 </div>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold mb-1">Status Pembayaran</label>
+                        <select name="payment_status" class="form-select form-select-sm fw-bold text-success">
+                            <option value="LUNAS" selected>Lunas / Cash</option>
+                            <option value="BELUM_BAYAR">Tempo / Hutang</option>
+                            <option value="SEBAGIAN">DP / Sebagian</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold mb-1">Catatan Mutu / KA</label>
+                        <input type="text" name="notes" class="form-control form-control-sm" placeholder="Cth: KA 13%, Asalan">
+                    </div>
+                </div>
                 <div class="p-2 bg-light rounded-3 mb-2 text-center">
-                    <span class="text-muted small d-block">Estimasi Total Bayar Tunai:</span>
+                    <span class="text-muted small d-block">Estimasi Total Pembelian:</span>
                     <h5 class="fw-bold text-success mb-0" id="b_total">Rp 0</h5>
                 </div>
-                <div class="mb-2">
-                    <label class="form-label small fw-bold mb-1">Catatan Mutu / Kadar Air</label>
-                    <input type="text" name="notes" class="form-control form-control-sm" placeholder="Cth: KA 13%, Asalan Basah, Petik Merah">
-                </div>
             </div>
-            <div class="modal-footer border-0 pt-0">
-                <button type="button" class="btn btn-sm btn-light" data-bs-dismiss="modal">Batal</button>
-                <button type="submit" class="btn btn-sm btn-success px-3 fw-bold">Simpan & Cetak Nota</button>
+            <div class="modal-footer border-0 pt-1 pb-3 px-3">
+                <div class="row g-2 w-100">
+                    <div class="col-4">
+                        <button type="button" class="btn btn-sm btn-light w-100 text-muted fw-semibold py-2" data-bs-dismiss="modal">Batal</button>
+                    </div>
+                    <div class="col-8">
+                        <button type="submit" class="btn btn-sm btn-success w-100 fw-bold py-2 shadow-sm">
+                            <i class="bi bi-check-lg me-1"></i>Simpan & Cetak
+                        </button>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
