@@ -27,10 +27,10 @@ $localIp         = gethostbyname(gethostname());
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title><?= e($mobilePageTitle) ?> - <?= e($companyShort) ?> Mobile</title>
 
-    <link rel="icon" type="image/png" href="<?= asset_url('images/logoapk.png') ?>">
-    <link rel="shortcut icon" type="image/png" href="<?= asset_url('images/logoapk.png') ?>">
-    <link rel="apple-touch-icon" href="<?= asset_url('images/logoapk.png') ?>">
-    <link rel="manifest" href="<?= base_url('apk/manifest.json') ?>">
+    <link rel="icon" type="image/png" href="<?= asset_url('images/logoapk.png?v=' . filemtime(__DIR__ . '/../../assets/images/logoapk.png')) ?>">
+    <link rel="shortcut icon" type="image/png" href="<?= asset_url('images/logoapk.png?v=' . filemtime(__DIR__ . '/../../assets/images/logoapk.png')) ?>">
+    <link rel="apple-touch-icon" href="<?= asset_url('images/logoapk.png?v=' . filemtime(__DIR__ . '/../../assets/images/logoapk.png')) ?>">
+    <link rel="manifest" href="<?= base_url('apk/manifest.json?v=' . filemtime(__DIR__ . '/../manifest.json')) ?>">
     <meta name="theme-color" content="#0d1e3a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
