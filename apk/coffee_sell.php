@@ -16,48 +16,70 @@ $mobileHeaderAction = '
 require_once __DIR__ . '/layout/header.php';
 
 // Handle Form Penjualan Kopi
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_sale') {
-    csrf_validate();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
 
-    $invoiceNumber = 'INV-KOP/' . date('Ym') . '/' . strtoupper(substr(uniqid(), -4));
-    $saleDate      = sanitize($_POST['sale_date'] ?? date('Y-m-d'));
-    $customerName  = sanitize($_POST['customer_name'] ?? 'Pembeli Umum');
-    $weightKg      = (float)($_POST['weight_kg'] ?? 0);
-    $pricePerKg    = (float)($_POST['price_per_kg'] ?? 0);
-    $costPerKg     = (float)($_POST['cost_per_kg'] ?? 60000);
-    $notes         = sanitize($_POST['notes'] ?? '');
+    if ($action === 'create_sale') {
+        csrf_validate();
 
-    $grandTotal   = $weightKg * $pricePerKg;
-    $totalCost    = $weightKg * $costPerKg;
-    $profitAmount = $grandTotal - $totalCost;
+        $invoiceNumber = 'INV-KOP/' . date('Ym') . '/' . strtoupper(substr(uniqid(), -4));
+        $saleDate      = sanitize($_POST['sale_date'] ?? date('Y-m-d'));
+        $customerName  = sanitize($_POST['customer_name'] ?? 'Pembeli Umum');
+        $weightKg      = (float)($_POST['weight_kg'] ?? 0);
+        $pricePerKg    = (float)($_POST['price_per_kg'] ?? 0);
+        $costPerKg     = (float)($_POST['cost_per_kg'] ?? 60000);
+        $notes         = sanitize($_POST['notes'] ?? '');
 
-    if ($weightKg > 0 && $pricePerKg > 0) {
-        $cStmt = $db->prepare("SELECT id FROM customers WHERE name = ? LIMIT 1");
-        $cStmt->execute([$customerName]);
-        $customerId = $cStmt->fetchColumn();
-        if (!$customerId) {
-            $db->prepare("INSERT INTO customers (customer_code, name) VALUES (?, ?)")->execute(['CUST-' . strtoupper(substr(uniqid(), -4)), $customerName]);
-            $customerId = $db->lastInsertId();
+        $grandTotal   = $weightKg * $pricePerKg;
+        $totalCost    = $weightKg * $costPerKg;
+        $profitAmount = $grandTotal - $totalCost;
+
+        if ($weightKg > 0 && $pricePerKg > 0) {
+            $cStmt = $db->prepare("SELECT id FROM customers WHERE name = ? LIMIT 1");
+            $cStmt->execute([$customerName]);
+            $customerId = $cStmt->fetchColumn();
+            if (!$customerId) {
+                $db->prepare("INSERT INTO customers (code, name) VALUES (?, ?)")->execute(['CUST-' . strtoupper(substr(uniqid(), -4)), $customerName]);
+                $customerId = $db->lastInsertId();
+            }
+
+            $stmt = $db->prepare("
+                INSERT INTO sales (
+                    invoice_number, sale_date, customer_id, total_weight_kg, subtotal, 
+                    grand_total, paid_amount, profit_amount, payment_status, notes, created_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'LUNAS', ?, ?)
+            ");
+            $stmt->execute([
+                $invoiceNumber, $saleDate, $customerId, $weightKg, $grandTotal,
+                $grandTotal, $grandTotal, $profitAmount, $notes, Auth::id()
+            ]);
+
+            log_audit('CREATE_COFFEE_SALE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat penjualan {$invoiceNumber} ke {$customerName}");
+            flash_set('success', "Penjualan {$invoiceNumber} berhasil dicatat!");
+            redirect('apk/coffee_sell.php');
         }
+    } elseif ($action === 'quick_add_customer') {
+        csrf_validate();
+        $name = sanitize($_POST['name'] ?? '');
+        $customerType = sanitize($_POST['customer_type'] ?? 'Eksportir');
+        $phone = sanitize($_POST['phone'] ?? '');
+        $address = sanitize($_POST['address'] ?? '');
+        $notes = sanitize($_POST['notes'] ?? '');
 
-        $stmt = $db->prepare("
-            INSERT INTO sales (
-                invoice_number, sale_date, customer_id, total_weight_kg, subtotal, 
-                grand_total, paid_amount, profit_amount, payment_status, notes, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'LUNAS', ?, ?)
-        ");
-        $stmt->execute([
-            $invoiceNumber, $saleDate, $customerId, $weightKg, $grandTotal,
-            $grandTotal, $grandTotal, $profitAmount, $notes, Auth::id()
-        ]);
-
-        log_audit('CREATE_COFFEE_SALE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat penjualan {$invoiceNumber} ke {$customerName}");
-        flash_set('success', "Penjualan {$invoiceNumber} berhasil dicatat!");
-        redirect('apk/coffee_sell.php');
+        if ($name) {
+            $code = 'CUST-' . strtoupper(substr(uniqid(), -4));
+            $db->prepare("INSERT INTO customers (code, name, customer_type, phone, address, notes) VALUES (?, ?, ?, ?, ?, ?)")
+               ->execute([$code, $name, $customerType, $phone, $address, $notes]);
+            log_audit('CREATE_CUSTOMER_APK', 'apk', $db->lastInsertId(), "Tambah pelanggan {$name}");
+            flash_set('success', "Pelanggan {$name} berhasil didaftarkan ke Buku Kontak!");
+            redirect('apk/coffee_sell.php?customer_name=' . urlencode($name) . '&open_add=1');
+        }
     }
 }
 
 // Queries
+$customersList = $db->query("SELECT id, code, name, customer_type, phone, address FROM customers ORDER BY name ASC")->fetchAll();
+
 $sales = $db->query("
     SELECT s.*, c.name AS customer_name 
     FROM sales s 
@@ -158,8 +180,23 @@ $kpi = $db->query("
             </div>
             <div class="modal-body p-3">
                 <div class="mb-2">
-                    <label class="form-label small fw-bold mb-1">Nama Pembeli / Eksportir / Mitra</label>
-                    <input type="text" name="customer_name" class="form-control form-control-sm" placeholder="Cth: PT. Aneka Kopi Nusantara" required>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label small fw-bold mb-0">Nama Pembeli / Eksportir</label>
+                        <button type="button" class="btn btn-link btn-sm p-0 text-primary text-decoration-none fw-bold" style="font-size: 0.74rem;" onclick="openCustomerPicker()">
+                            <i class="bi bi-person-lines-fill me-1"></i>Pilih dari Buku Pelanggan &raquo;
+                        </button>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="customer_name" id="sell_customer_name" list="customerList" class="form-control" placeholder="Ketik nama atau pilih pelanggan..." value="<?= e($_GET['customer_name'] ?? '') ?>" required autocomplete="off">
+                        <button type="button" class="btn btn-outline-primary" onclick="openCustomerPicker()" title="Buka Buku Pelanggan">
+                            <i class="bi bi-book"></i>
+                        </button>
+                    </div>
+                    <datalist id="customerList">
+                        <?php foreach ($customersList as $cl): ?>
+                            <option value="<?= e($cl['name']) ?>"><?= e($cl['customer_type'] ?: 'Pembeli') ?> <?= e($cl['phone'] ? "({$cl['phone']})" : '') ?></option>
+                        <?php endforeach; ?>
+                    </datalist>
                 </div>
                 <div class="mb-2">
                     <label class="form-label small fw-bold mb-1">Tanggal Pengiriman</label>
@@ -202,7 +239,158 @@ $kpi = $db->query("
     </div>
 </div>
 
+<!-- MODAL BUKU PELANGGAN (QUICK PICKER) -->
+<div class="modal fade" id="modalPickCustomer" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Buku Pelanggan & Buyer</h6>
+                <button type="button" class="btn-close btn-close-white" onclick="closeCustomerPicker()"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Search Box -->
+                <div class="position-relative mb-3">
+                    <input type="text" id="searchCustomerInput" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Cari nama pelanggan, jenis, no hp...">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Pilih Pelanggan (<?= count($customersList) ?> Kontak)</span>
+                    <button type="button" class="btn btn-sm btn-outline-primary rounded-pill py-0 px-2 fw-semibold" style="font-size: 0.72rem;" onclick="showAddCustomerForm()">
+                        <i class="bi bi-plus-lg me-1"></i>+ Pelanggan Baru
+                    </button>
+                </div>
+
+                <!-- Form Tambah Cepat Pelanggan Baru -->
+                <div id="quickAddCustomerBox" class="p-3 bg-light rounded-3 mb-3 border border-primary border-opacity-25" style="display: none;">
+                    <div class="fw-bold small text-primary mb-2"><i class="bi bi-person-plus-fill me-1"></i>Daftarkan Pelanggan Baru</div>
+                    <form method="POST" action="">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="quick_add_customer">
+                        <div class="mb-2">
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="Nama Perusahaan / Pembeli *" required>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <select name="customer_type" class="form-select form-select-sm">
+                                    <option value="Eksportir">Eksportir</option>
+                                    <option value="Pabrik">Pabrik</option>
+                                    <option value="Pengepul">Pengepul</option>
+                                    <option value="Toko">Toko / Roastery</option>
+                                    <option value="Umum">Umum / Perorangan</option>
+                                </select>
+                            </div>
+                            <div class="col-6">
+                                <input type="tel" name="phone" class="form-control form-control-sm" placeholder="No Telepon / WA">
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <input type="text" name="address" class="form-control form-control-sm" placeholder="Kota / Alamat (Cth: Bandar Lampung)">
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-sm btn-light" onclick="hideAddCustomerForm()">Batal</button>
+                            <button type="submit" class="btn btn-sm btn-primary fw-bold">Simpan Pelanggan</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Daftar Kartu Pelanggan -->
+                <div id="customerItemsList" class="d-flex flex-column gap-2" style="max-height: 320px; overflow-y: auto;">
+                    <?php if (empty($customersList)): ?>
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-journal-x fs-2 d-block mb-1 opacity-50"></i>
+                            Belum ada data pelanggan terdaftar.<br>
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill mt-2" onclick="showAddCustomerForm()">+ Daftarkan Pelanggan Sekarang</button>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($customersList as $cl): ?>
+                            <div class="customer-card-item p-2 rounded-3 border bg-white d-flex align-items-center justify-content-between" 
+                                 style="cursor: pointer; transition: all 0.15s ease;"
+                                 data-filter="<?= strtolower(e($cl['name'] . ' ' . ($cl['customer_type'] ?? '') . ' ' . ($cl['phone'] ?? '') . ' ' . ($cl['address'] ?? ''))) ?>"
+                                 onclick="selectCustomer('<?= e(addslashes($cl['name'])) ?>')">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-primary-subtle text-primary fw-bold d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 0.85rem; flex-shrink: 0;">
+                                        <?= strtoupper(substr($cl['name'], 0, 2)) ?>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.86rem; line-height: 1.2;">
+                                            <?= e($cl['name']) ?>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.72rem;">
+                                            <span class="badge bg-light text-primary border" style="font-size: 0.62rem;"><?= e($cl['customer_type'] ?: 'Pembeli') ?></span>
+                                            <?php if (!empty($cl['address'])): ?>
+                                                &bull; <?= e($cl['address']) ?>
+                                            <?php endif; ?>
+                                            <?php if (!empty($cl['phone'])): ?>
+                                                &bull; <?= e($cl['phone']) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25" style="font-size: 0.65rem;">
+                                    Tarik &raquo;
+                                </span>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let addSaleModalInstance = null;
+let pickCustomerModalInstance = null;
+
+function getSaleModal() {
+    if (!addSaleModalInstance) {
+        addSaleModalInstance = new bootstrap.Modal(document.getElementById('modalAddSale'));
+    }
+    return addSaleModalInstance;
+}
+
+function getCustomerPickModal() {
+    if (!pickCustomerModalInstance) {
+        pickCustomerModalInstance = new bootstrap.Modal(document.getElementById('modalPickCustomer'));
+    }
+    return pickCustomerModalInstance;
+}
+
+function openCustomerPicker() {
+    const saleEl = document.getElementById('modalAddSale');
+    const modal = bootstrap.Modal.getInstance(saleEl);
+    if (modal) {
+        modal.hide();
+    }
+    setTimeout(() => {
+        getCustomerPickModal().show();
+        setTimeout(() => {
+            document.getElementById('searchCustomerInput')?.focus();
+        }, 300);
+    }, 200);
+}
+
+function closeCustomerPicker() {
+    getCustomerPickModal().hide();
+    setTimeout(() => {
+        getSaleModal().show();
+    }, 200);
+}
+
+function selectCustomer(name) {
+    document.getElementById('sell_customer_name').value = name;
+    closeCustomerPicker();
+}
+
+function showAddCustomerForm() {
+    document.getElementById('quickAddCustomerBox').style.display = 'block';
+}
+
+function hideAddCustomerForm() {
+    document.getElementById('quickAddCustomerBox').style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const w = document.getElementById('s_weight');
     const p = document.getElementById('s_price');
@@ -218,6 +406,25 @@ document.addEventListener('DOMContentLoaded', function() {
     if (w && p) {
         w.addEventListener('input', recalc);
         p.addEventListener('input', recalc);
+    }
+
+    // Live search filter
+    const searchInput = document.getElementById('searchCustomerInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const q = this.value.toLowerCase().trim();
+            const items = document.querySelectorAll('.customer-card-item');
+            items.forEach(el => {
+                const text = el.getAttribute('data-filter') || '';
+                el.style.display = text.includes(q) ? 'flex' : 'none';
+            });
+        });
+    }
+
+    // Auto open modal if requested via URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('open_add') === '1' || urlParams.get('customer_name')) {
+        getSaleModal().show();
     }
 });
 </script>

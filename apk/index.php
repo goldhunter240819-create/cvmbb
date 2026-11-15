@@ -87,8 +87,8 @@ $recentFeed = array_slice($feed, 0, 4);
 .menu-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 16px 8px;
-    padding: 14px 12px;
+    gap: 14px 6px;
+    padding: 16px 8px 14px 8px;
     background: #ffffff;
     margin: 0 16px 16px 16px;
     border-radius: 20px;
@@ -101,32 +101,36 @@ $recentFeed = array_slice($feed, 0, 4);
     text-decoration: none;
     color: #1e293b;
     text-align: center;
+    padding: 2px 2px 4px 2px;
 }
 .grid-icon-box {
-    width: 52px;
-    height: 52px;
-    border-radius: 18px;
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.45rem;
-    margin-bottom: 6px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    font-size: 1.28rem;
+    margin-bottom: 5px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
     transition: transform 0.15s ease;
 }
 .grid-item:active .grid-icon-box {
-    transform: scale(0.9);
+    transform: scale(0.92);
 }
 .grid-label {
-    font-size: 0.7rem;
+    font-size: 0.66rem;
     font-weight: 600;
-    line-height: 1.2;
+    line-height: 1.24;
     color: #334155;
+    text-align: center;
+    word-break: break-word;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    height: 24px;
+    min-height: 28px;
+    padding: 0 1px;
 }
 
 /* Banner Promo */
@@ -249,7 +253,7 @@ $recentFeed = array_slice($feed, 0, 4);
         <div class="grid-icon-box" style="background: #ecfdf5; color: #059669;">
             <i class="bi bi-cart-plus-fill"></i>
         </div>
-        <span class="grid-label">Beli Kopi Petani</span>
+        <span class="grid-label">Beli Kopi</span>
     </a>
 
     <!-- 2. Jual Kopi -->
@@ -257,10 +261,18 @@ $recentFeed = array_slice($feed, 0, 4);
         <div class="grid-icon-box" style="background: #eff6ff; color: #1d4ed8;">
             <i class="bi bi-truck"></i>
         </div>
-        <span class="grid-label">Jual Kopi Trading</span>
+        <span class="grid-label">Jual Kopi</span>
     </a>
 
-    <!-- 3. Jasa Roasting -->
+    <!-- 3. Buku Pelanggan & Mitra -->
+    <a href="<?= base_url('apk/customers.php') ?>" class="grid-item">
+        <div class="grid-icon-box" style="background: #e0e7ff; color: #4338ca;">
+            <i class="bi bi-person-lines-fill"></i>
+        </div>
+        <span class="grid-label">Buku Kontak</span>
+    </a>
+
+    <!-- 4. Jasa Roasting -->
     <a href="<?= base_url('apk/roasting.php') ?>" class="grid-item">
         <div class="grid-icon-box" style="background: #fffbeb; color: #d97706;">
             <i class="bi bi-fire"></i>
@@ -268,7 +280,7 @@ $recentFeed = array_slice($feed, 0, 4);
         <span class="grid-label">Jasa Roasting</span>
     </a>
 
-    <!-- 4. Produksi Kopi -->
+    <!-- 5. Produksi Kopi -->
     <a href="<?= base_url('apk/production.php') ?>" class="grid-item">
         <div class="grid-icon-box" style="background: #fdf2f8; color: #db2777;">
             <i class="bi bi-gear-wide-connected"></i>
@@ -276,7 +288,7 @@ $recentFeed = array_slice($feed, 0, 4);
         <span class="grid-label">Produksi Bubuk</span>
     </a>
 
-    <!-- 5. Agen BRILink -->
+    <!-- 6. Agen BRILink -->
     <a href="<?= base_url('apk/brilink.php') ?>" class="grid-item">
         <div class="grid-icon-box" style="background: #f0fdf4; color: #16a34a;">
             <i class="bi bi-credit-card-2-front-fill"></i>
@@ -284,7 +296,7 @@ $recentFeed = array_slice($feed, 0, 4);
         <span class="grid-label">Agen BRILink</span>
     </a>
 
-    <!-- 6. Dekorasi -->
+    <!-- 7. Dekorasi -->
     <a href="<?= base_url('apk/decoration.php') ?>" class="grid-item">
         <div class="grid-icon-box" style="background: #faf5ff; color: #9333ea;">
             <i class="bi bi-flower1"></i>
@@ -292,7 +304,7 @@ $recentFeed = array_slice($feed, 0, 4);
         <span class="grid-label">Divisi Dekor</span>
     </a>
 
-    <!-- 7. Sound System -->
+    <!-- 8. Sound System -->
     <a href="<?= base_url('apk/sound_system.php') ?>" class="grid-item">
         <div class="grid-icon-box" style="background: #fff1f2; color: #e11d48;">
             <i class="bi bi-speaker-fill"></i>
@@ -300,20 +312,12 @@ $recentFeed = array_slice($feed, 0, 4);
         <span class="grid-label">Sound Sistem</span>
     </a>
 
-    <!-- 8. Persuratan -->
+    <!-- 9. Persuratan -->
     <a href="<?= base_url('apk/letters.php') ?>" class="grid-item">
         <div class="grid-icon-box" style="background: #f1f5f9; color: #475569;">
             <i class="bi bi-file-earmark-text-fill"></i>
         </div>
         <span class="grid-label">Surat Resmi</span>
-    </a>
-
-    <!-- 9. Struktur MBB -->
-    <a href="<?= base_url('apk/organization.php') ?>" class="grid-item">
-        <div class="grid-icon-box" style="background: #f0fdfa; color: #0d9488;">
-            <i class="bi bi-diagram-3-fill"></i>
-        </div>
-        <span class="grid-label">Bagan Pejabat</span>
     </a>
 
     <!-- 10. Laba Rugi -->

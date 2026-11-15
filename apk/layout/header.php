@@ -287,6 +287,38 @@ $localIp         = gethostbyname(gethostname());
                 right: 18px;
             }
         }
+        @media (max-width: 430px) {
+            body {
+                font-size: 0.80rem !important;
+            }
+            .mobile-card {
+                padding: 13px 14px !important;
+                margin: 0 12px 12px 12px !important;
+            }
+            .wallet-card {
+                margin: -36px 12px 14px 12px !important;
+                padding: 14px 12px !important;
+            }
+            .promo-banner {
+                margin: 0 12px 14px 12px !important;
+                padding: 12px 14px !important;
+            }
+            .menu-grid {
+                margin: 0 12px 14px 12px !important;
+                padding: 14px 6px !important;
+                gap: 12px 4px !important;
+            }
+            .section-title {
+                padding: 0 16px 6px 16px !important;
+            }
+            .nav-btn {
+                padding: 4px 8px !important;
+                font-size: 0.68rem !important;
+            }
+            .nav-btn i {
+                font-size: 1.25rem !important;
+            }
+        }
     </style>
 </head>
 <body>

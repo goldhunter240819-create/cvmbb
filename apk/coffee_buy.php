@@ -16,47 +16,68 @@ $mobileHeaderAction = '
 require_once __DIR__ . '/layout/header.php';
 
 // Form Handler
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'create_buy') {
-    csrf_validate();
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
 
-    $invoiceNumber = 'NOT-BELI/' . date('Ym') . '/' . strtoupper(substr(uniqid(), -4));
-    $purchaseDate  = sanitize($_POST['purchase_date'] ?? date('Y-m-d'));
-    $farmerName    = sanitize($_POST['farmer_name'] ?? 'Petani');
-    $grossWeight   = (float)($_POST['gross_weight'] ?? 0);
-    $tareWeight    = (float)($_POST['tare_weight'] ?? 0);
-    $pricePerKg    = (float)($_POST['price_per_kg'] ?? 0);
-    $notes         = sanitize($_POST['notes'] ?? '');
+    if ($action === 'create_buy') {
+        csrf_validate();
 
-    $netWeight = max(0, $grossWeight - $tareWeight);
-    $grandTotal = $netWeight * $pricePerKg;
+        $invoiceNumber = 'NOT-BELI/' . date('Ym') . '/' . strtoupper(substr(uniqid(), -4));
+        $purchaseDate  = sanitize($_POST['purchase_date'] ?? date('Y-m-d'));
+        $farmerName    = sanitize($_POST['farmer_name'] ?? 'Petani');
+        $grossWeight   = (float)($_POST['gross_weight'] ?? 0);
+        $tareWeight    = (float)($_POST['tare_weight'] ?? 0);
+        $pricePerKg    = (float)($_POST['price_per_kg'] ?? 0);
+        $notes         = sanitize($_POST['notes'] ?? '');
 
-    if ($netWeight > 0 && $pricePerKg > 0) {
-        $fStmt = $db->prepare("SELECT id FROM farmers WHERE name = ? LIMIT 1");
-        $fStmt->execute([$farmerName]);
-        $farmerId = $fStmt->fetchColumn();
-        if (!$farmerId) {
-            $db->prepare("INSERT INTO farmers (code, name) VALUES (?, ?)")->execute(['FRM-' . strtoupper(substr(uniqid(), -4)), $farmerName]);
-            $farmerId = $db->lastInsertId();
+        $netWeight = max(0, $grossWeight - $tareWeight);
+        $grandTotal = $netWeight * $pricePerKg;
+
+        if ($netWeight > 0 && $pricePerKg > 0) {
+            $fStmt = $db->prepare("SELECT id FROM farmers WHERE name = ? LIMIT 1");
+            $fStmt->execute([$farmerName]);
+            $farmerId = $fStmt->fetchColumn();
+            if (!$farmerId) {
+                $db->prepare("INSERT INTO farmers (code, name) VALUES (?, ?)")->execute(['FRM-' . strtoupper(substr(uniqid(), -4)), $farmerName]);
+                $farmerId = $db->lastInsertId();
+            }
+
+            $stmt = $db->prepare("
+                INSERT INTO purchases (
+                    invoice_number, purchase_date, farmer_id, gross_weight, tare_weight, net_weight,
+                    price_per_kg, total_amount, grand_total, paid_amount, payment_status, notes, created_by
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'LUNAS', ?, ?)
+            ");
+            $stmt->execute([
+                $invoiceNumber, $purchaseDate, $farmerId, $grossWeight, $tareWeight, $netWeight,
+                $pricePerKg, $grandTotal, $grandTotal, $grandTotal, $notes, Auth::id()
+            ]);
+
+            log_audit('CREATE_COFFEE_PURCHASE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat pembelian {$invoiceNumber} dari {$farmerName}");
+            flash_set('success', "Pembelian dari {$farmerName} berhasil dicatat!");
+            redirect('apk/coffee_buy.php');
         }
+    } elseif ($action === 'quick_add_farmer') {
+        csrf_validate();
+        $name = sanitize($_POST['name'] ?? '');
+        $phone = sanitize($_POST['phone'] ?? '');
+        $village = sanitize($_POST['village'] ?? '');
+        $notes = sanitize($_POST['notes'] ?? '');
 
-        $stmt = $db->prepare("
-            INSERT INTO purchases (
-                invoice_number, purchase_date, farmer_id, gross_weight, tare_weight, net_weight,
-                price_per_kg, total_amount, grand_total, paid_amount, payment_status, notes, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'LUNAS', ?, ?)
-        ");
-        $stmt->execute([
-            $invoiceNumber, $purchaseDate, $farmerId, $grossWeight, $tareWeight, $netWeight,
-            $pricePerKg, $grandTotal, $grandTotal, $grandTotal, $notes, Auth::id()
-        ]);
-
-        log_audit('CREATE_COFFEE_PURCHASE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat pembelian {$invoiceNumber} dari {$farmerName}");
-        flash_set('success', "Pembelian dari {$farmerName} berhasil dicatat!");
-        redirect('apk/coffee_buy.php');
+        if ($name) {
+            $code = 'FRM-' . strtoupper(substr(uniqid(), -4));
+            $db->prepare("INSERT INTO farmers (code, name, phone, village, notes) VALUES (?, ?, ?, ?, ?)")
+               ->execute([$code, $name, $phone, $village, $notes]);
+            log_audit('CREATE_FARMER_APK', 'apk', $db->lastInsertId(), "Tambah mitra petani {$name}");
+            flash_set('success', "Mitra Petani {$name} berhasil didaftarkan ke Buku Kontak!");
+            redirect('apk/coffee_buy.php?farmer_name=' . urlencode($name) . '&open_add=1');
+        }
     }
 }
 
 // Queries
+$farmersList = $db->query("SELECT id, code, name, phone, village, farmer_group FROM farmers ORDER BY name ASC")->fetchAll();
+
 $purchases = $db->query("
     SELECT p.*, f.name AS farmer_name 
     FROM purchases p 
@@ -157,8 +178,23 @@ $kpi = $db->query("
             </div>
             <div class="modal-body p-3">
                 <div class="mb-2">
-                    <label class="form-label small fw-bold mb-1">Nama Petani / Pemasok</label>
-                    <input type="text" name="farmer_name" class="form-control form-control-sm" placeholder="Cth: Budi Santoso" required>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label small fw-bold mb-0">Nama Petani / Pemasok</label>
+                        <button type="button" class="btn btn-link btn-sm p-0 text-success text-decoration-none fw-bold" style="font-size: 0.74rem;" onclick="openFarmerPicker()">
+                            <i class="bi bi-person-lines-fill me-1"></i>Pilih dari Buku Mitra &raquo;
+                        </button>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <input type="text" name="farmer_name" id="buy_farmer_name" list="farmerList" class="form-control" placeholder="Ketik nama atau pilih dari buku..." value="<?= e($_GET['farmer_name'] ?? '') ?>" required autocomplete="off">
+                        <button type="button" class="btn btn-outline-success" onclick="openFarmerPicker()" title="Buka Buku Kontak Petani">
+                            <i class="bi bi-book"></i>
+                        </button>
+                    </div>
+                    <datalist id="farmerList">
+                        <?php foreach ($farmersList as $fl): ?>
+                            <option value="<?= e($fl['name']) ?>"><?= e($fl['village'] ? "Desa {$fl['village']}" : '') ?> <?= e($fl['phone'] ? "({$fl['phone']})" : '') ?></option>
+                        <?php endforeach; ?>
+                    </datalist>
                 </div>
                 <div class="mb-2">
                     <label class="form-label small fw-bold mb-1">Tanggal Pembelian</label>
@@ -201,7 +237,146 @@ $kpi = $db->query("
     </div>
 </div>
 
+<!-- MODAL BUKU KONTAK PETANI (QUICK PICKER) -->
+<div class="modal fade" id="modalPickFarmer" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-success text-white py-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-person-lines-fill me-2"></i>Buku Mitra Petani</h6>
+                <button type="button" class="btn-close btn-close-white" onclick="closeFarmerPicker()"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Search Box -->
+                <div class="position-relative mb-3">
+                    <input type="text" id="searchFarmerInput" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Cari nama, desa, no hp...">
+                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="small text-muted fw-bold text-uppercase" style="font-size: 0.7rem;">Pilih Mitra (<?= count($farmersList) ?> Kontak)</span>
+                    <button type="button" class="btn btn-sm btn-outline-success rounded-pill py-0 px-2 fw-semibold" style="font-size: 0.72rem;" onclick="showAddFarmerForm()">
+                        <i class="bi bi-plus-lg me-1"></i>+ Mitra Baru
+                    </button>
+                </div>
+
+                <!-- Form Tambah Cepat Mitra Baru -->
+                <div id="quickAddFarmerBox" class="p-3 bg-light rounded-3 mb-3 border border-success border-opacity-25" style="display: none;">
+                    <div class="fw-bold small text-success mb-2"><i class="bi bi-person-plus-fill me-1"></i>Daftarkan Petani Baru</div>
+                    <form method="POST" action="">
+                        <?= csrf_field() ?>
+                        <input type="hidden" name="action" value="quick_add_farmer">
+                        <div class="mb-2">
+                            <input type="text" name="name" class="form-control form-control-sm" placeholder="Nama Lengkap Petani *" required>
+                        </div>
+                        <div class="row g-2 mb-2">
+                            <div class="col-6">
+                                <input type="text" name="village" class="form-control form-control-sm" placeholder="Desa / Dusun">
+                            </div>
+                            <div class="col-6">
+                                <input type="tel" name="phone" class="form-control form-control-sm" placeholder="No HP / WhatsApp">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-sm btn-light" onclick="hideAddFarmerForm()">Batal</button>
+                            <button type="submit" class="btn btn-sm btn-success fw-bold">Simpan Mitra</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Daftar Kartu Petani -->
+                <div id="farmerItemsList" class="d-flex flex-column gap-2" style="max-height: 320px; overflow-y: auto;">
+                    <?php if (empty($farmersList)): ?>
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-journal-x fs-2 d-block mb-1 opacity-50"></i>
+                            Belum ada mitra petani terdaftar.<br>
+                            <button type="button" class="btn btn-sm btn-success rounded-pill mt-2" onclick="showAddFarmerForm()">+ Daftarkan Petani Sekarang</button>
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($farmersList as $fl): ?>
+                            <div class="farmer-card-item p-2 rounded-3 border bg-white d-flex align-items-center justify-content-between" 
+                                 style="cursor: pointer; transition: all 0.15s ease;"
+                                 data-filter="<?= strtolower(e($fl['name'] . ' ' . ($fl['village'] ?? '') . ' ' . ($fl['phone'] ?? ''))) ?>"
+                                 onclick="selectFarmer('<?= e(addslashes($fl['name'])) ?>')">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle bg-success-subtle text-success fw-bold d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; font-size: 0.85rem; flex-shrink: 0;">
+                                        <?= strtoupper(substr($fl['name'], 0, 2)) ?>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark" style="font-size: 0.86rem; line-height: 1.2;">
+                                            <?= e($fl['name']) ?>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 0.72rem;">
+                                            <i class="bi bi-geo-alt me-1"></i><?= e($fl['village'] ?: 'Air Hitam') ?>
+                                            <?php if (!empty($fl['phone'])): ?>
+                                                &bull; <i class="bi bi-telephone me-1"></i><?= e($fl['phone']) ?>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="badge bg-success-subtle text-success border border-success border-opacity-25" style="font-size: 0.65rem;">
+                                    Tarik &raquo;
+                                </span>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
+let addBuyModalInstance = null;
+let pickFarmerModalInstance = null;
+
+function getBuyModal() {
+    if (!addBuyModalInstance) {
+        addBuyModalInstance = new bootstrap.Modal(document.getElementById('modalAddBuy'));
+    }
+    return addBuyModalInstance;
+}
+
+function getPickModal() {
+    if (!pickFarmerModalInstance) {
+        pickFarmerModalInstance = new bootstrap.Modal(document.getElementById('modalPickFarmer'));
+    }
+    return pickFarmerModalInstance;
+}
+
+function openFarmerPicker() {
+    const buyEl = document.getElementById('modalAddBuy');
+    const modal = bootstrap.Modal.getInstance(buyEl);
+    if (modal) {
+        modal.hide();
+    }
+    setTimeout(() => {
+        getPickModal().show();
+        setTimeout(() => {
+            document.getElementById('searchFarmerInput')?.focus();
+        }, 300);
+    }, 200);
+}
+
+function closeFarmerPicker() {
+    getPickModal().hide();
+    setTimeout(() => {
+        getBuyModal().show();
+    }, 200);
+}
+
+function selectFarmer(name) {
+    document.getElementById('buy_farmer_name').value = name;
+    closeFarmerPicker();
+}
+
+function showAddFarmerForm() {
+    document.getElementById('quickAddFarmerBox').style.display = 'block';
+}
+
+function hideAddFarmerForm() {
+    document.getElementById('quickAddFarmerBox').style.display = 'none';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const g = document.getElementById('b_gross');
     const t = document.getElementById('b_tare');
@@ -224,6 +399,25 @@ document.addEventListener('DOMContentLoaded', function() {
         g.addEventListener('input', recalc);
         t.addEventListener('input', recalc);
         p.addEventListener('input', recalc);
+    }
+
+    // Live search filter
+    const searchInput = document.getElementById('searchFarmerInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const q = this.value.toLowerCase().trim();
+            const items = document.querySelectorAll('.farmer-card-item');
+            items.forEach(el => {
+                const text = el.getAttribute('data-filter') || '';
+                el.style.display = text.includes(q) ? 'flex' : 'none';
+            });
+        });
+    }
+
+    // Auto open add buy modal if redirected with open_add=1
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('open_add') === '1' || urlParams.get('farmer_name')) {
+        getBuyModal().show();
     }
 });
 </script>
