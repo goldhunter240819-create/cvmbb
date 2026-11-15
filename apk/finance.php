@@ -72,21 +72,13 @@ $transactions = $db->query("
         <a href="<?= base_url('apk/balance_sheet.php') ?>" class="badge bg-white text-dark small text-decoration-none px-2 py-1 font-monospace">Lihat Neraca &raquo;</a>
     </div>
     <h3 class="fw-bold mb-2 text-white"><?= format_rupiah($totalLiquid) ?></h3>
-    <div class="text-white-50 small" style="font-size: 0.72rem;">
-        Tersebar di <?= count($accounts) ?> Rekening Bank & Kas Tunai MBB
-    </div>
-</div>
-
-<!-- KARTU MULTI-KAS SLIDER MOBILE -->
-<div class="px-3 mb-2">
-    <div class="d-flex gap-2 overflow-auto pb-2" style="scrollbar-width: none;">
-        <?php foreach ($accounts as $acc): ?>
-            <div class="p-3 bg-white rounded-4 border shadow-sm flex-shrink-0" style="width: 220px;">
-                <div class="text-muted small" style="font-size: 0.72rem;"><?= e($acc['account_name']) ?></div>
-                <div class="fw-bold text-primary fs-6 my-1"><?= format_rupiah($acc['current_balance']) ?></div>
-                <div class="small text-muted" style="font-size: 0.68rem;"><?= e($acc['bank_name'] ?: 'Kas Fisik') ?></div>
-            </div>
-        <?php endforeach; ?>
+    <div class="d-flex justify-content-between align-items-center pt-2 border-top border-white border-opacity-15">
+        <div class="text-white-50 small" style="font-size: 0.72rem;">
+            Tersebar di <?= count($accounts) ?> Rekening Bank & Kas Tunai
+        </div>
+        <button type="button" class="btn btn-sm btn-light text-primary fw-bold px-3 py-1 rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#modalDetailKas">
+            <i class="bi bi-eye-fill me-1"></i> Rincian Kas
+        </button>
     </div>
 </div>
 
@@ -196,6 +188,66 @@ $transactions = $db->query("
                 <button type="submit" class="btn btn-sm btn-dark px-3 fw-bold">Simpan Mutasi Kas</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- MODAL DETAIL RINCIAN BUKU KAS -->
+<div class="modal fade" id="modalDetailKas" tabindex="-1" aria-labelledby="modalDetailKasLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-dark text-white border-0 py-3 px-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="rounded-circle bg-primary bg-opacity-25 text-info p-2 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                        <i class="bi bi-wallet2 fs-5"></i>
+                    </div>
+                    <div>
+                        <h6 class="modal-title fw-bold text-white mb-0" id="modalDetailKasLabel">Rincian Saldo Kas & Rekening</h6>
+                        <small class="text-white-50" style="font-size: 0.72rem;">Daftar Akun Kas CV. MBB Terdaftar</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="list-group list-group-flush gap-2">
+                    <?php foreach ($accounts as $acc): ?>
+                        <div class="list-group-item d-flex justify-content-between align-items-center p-3 rounded-3 border bg-light">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="rounded-circle <?= empty($acc['bank_name']) ? 'bg-success-subtle text-success' : 'bg-primary-subtle text-primary' ?> d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; flex-shrink: 0;">
+                                    <i class="bi <?= empty($acc['bank_name']) ? 'bi-cash-coin' : 'bi-bank2' ?> fs-5"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark" style="font-size: 0.85rem; line-height: 1.2;">
+                                        <?= e($acc['account_name']) ?>
+                                    </div>
+                                    <div class="text-muted small" style="font-size: 0.72rem;">
+                                        <?= e($acc['bank_name'] ?: 'Kas Fisik Tunai') ?>
+                                        <?= !empty($acc['account_number']) ? ' &bull; ' . e($acc['account_number']) : '' ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-white text-dark border font-monospace fw-bold" style="font-size: 0.82rem;">
+                                    <?= format_rupiah($acc['current_balance']) ?>
+                                </span>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+
+                <div class="mt-3 p-3 rounded-3 bg-primary-subtle border border-primary border-opacity-25 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="small fw-semibold text-primary">Total Likuiditas Kas</div>
+                        <div class="text-muted" style="font-size: 0.7rem;"><?= count($accounts) ?> Akun Terdaftar</div>
+                    </div>
+                    <div class="fw-bold text-primary fs-5">
+                        <?= format_rupiah($totalLiquid) ?>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-3 pt-0">
+                <button type="button" class="btn btn-secondary w-100 py-2 rounded-3" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
     </div>
 </div>
 
