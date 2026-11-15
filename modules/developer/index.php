@@ -246,6 +246,37 @@ require_once __DIR__ . '/../../components/topbar.php';
     </div>
 </div>
 
+<!-- 1.6 RESET TRANSAKSI FRESH DATABASE -->
+<div class="card-mbb mb-4 border-danger border-opacity-50" style="background: linear-gradient(180deg, #ffffff 0%, #fffbfa 100%);">
+    <div class="card-mbb-header bg-danger text-white d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-trash3-fill fs-5"></i>
+            <span class="fw-bold">Kosongkan Seluruh Data Transaksi (Fresh Slate ke Rp 0)</span>
+            <span class="badge bg-warning text-dark font-monospace" style="font-size: 0.68rem;">DANGER ZONE</span>
+        </div>
+        <form method="POST" action="" onsubmit="return confirm('PERINGATAN: Seluruh data simulasi (pembelian kopi, penjualan, kas & bank Rp 125jt, fee BRILink) akan DIRESET KE Rp 0.\n\nUser Maul, Admin, dan 8 Data Pegawai tetap UTUH 100%.\n\nYakin ingin mengosongkan database sekarang?');">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="reset_fresh_database">
+            <button type="submit" class="btn btn-sm btn-light text-danger fw-bold px-3 shadow-sm">
+                <i class="bi bi-arrow-repeat me-1"></i> Reset Transaksi Sekarang (Fresh DB)
+            </button>
+        </form>
+    </div>
+    <div class="card-mbb-body p-3">
+        <p class="small text-muted mb-2">
+            Gunakan tombol ini sebelum sistem mulai dipakai operasional nyata untuk membersihkan data dummy/simulasi testing.
+        </p>
+        <div class="row g-2 small">
+            <div class="col-md-6 text-success">
+                <i class="bi bi-check-circle-fill me-1"></i> <strong>Tetap Utuh:</strong> Akun User (Maul & Admin), 8 Karyawan Inti, Struktur Divisi, Jabatan & Aset Inventaris.
+            </div>
+            <div class="col-md-6 text-danger">
+                <i class="bi bi-trash-fill me-1"></i> <strong>Akan Direset ke 0:</strong> Seluruh Transaksi Keuangan, Saldo Kas/Bank, Timbangan Kopi, Order Roasting & BRI Link.
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- 2. DIAGNOSTIK SERVER & STATISTIK DATABASE -->
 <div class="row g-4 mb-4">
     <!-- Server Environment Specs -->
