@@ -48,6 +48,26 @@ document.addEventListener('DOMContentLoaded', function () {
             bsAlert.close();
         });
     }, 6000);
+
+    // 5. Strict Sidebar Accordion: Hanya boleh 1 dropdown terbuka sekaligus
+    const sidebarMenu = document.getElementById('sidebarMenu');
+    if (sidebarMenu) {
+        const collapses = sidebarMenu.querySelectorAll('.sidebar-submenu-collapse');
+        collapses.forEach(function (colEl) {
+            colEl.addEventListener('show.bs.collapse', function () {
+                collapses.forEach(function (otherEl) {
+                    if (otherEl !== colEl) {
+                        const bsCollapse = bootstrap.Collapse.getInstance(otherEl);
+                        if (bsCollapse) {
+                            bsCollapse.hide();
+                        } else if (otherEl.classList.contains('show')) {
+                            new bootstrap.Collapse(otherEl, { toggle: false }).hide();
+                        }
+                    }
+                });
+            });
+        });
+    }
 });
 
 /**
