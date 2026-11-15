@@ -100,10 +100,10 @@ $customers = $db->query("SELECT * FROM customers ORDER BY name ASC")->fetchAll()
 <!-- SUB-NAV TOGGLE (MITRA PETANI VS PELANGGAN) -->
 <div class="px-3 mb-3">
     <div class="d-flex p-1 bg-white rounded-pill border shadow-sm">
-        <button type="button" class="btn btn-sm rounded-pill flex-fill fw-bold py-2 <?= $tab === 'farmers' ? 'btn-success text-white shadow-sm' : 'btn-light text-muted' ?>" onclick="switchTab('farmers')">
+        <button type="button" id="tabBtnFarmers" class="btn btn-sm rounded-pill flex-fill fw-bold py-2 <?= $tab === 'farmers' ? 'btn-success text-white shadow-sm' : 'btn-light text-muted' ?>" onclick="switchTab('farmers')">
             <i class="bi bi-person-fill me-1"></i> Mitra Petani (<?= count($farmers) ?>)
         </button>
-        <button type="button" class="btn btn-sm rounded-pill flex-fill fw-bold py-2 <?= $tab === 'customers' ? 'btn-primary text-white shadow-sm' : 'btn-light text-muted' ?>" onclick="switchTab('customers')">
+        <button type="button" id="tabBtnCustomers" class="btn btn-sm rounded-pill flex-fill fw-bold py-2 <?= $tab === 'customers' ? 'btn-success text-white shadow-sm' : 'btn-light text-muted' ?>" onclick="switchTab('customers')">
             <i class="bi bi-building me-1"></i> Pelanggan / Buyer (<?= count($customers) ?>)
         </button>
     </div>
@@ -111,9 +111,11 @@ $customers = $db->query("SELECT * FROM customers ORDER BY name ASC")->fetchAll()
 
 <!-- SEARCH BAR INSTAN -->
 <div class="px-3 mb-3">
-    <div class="position-relative">
-        <input type="text" id="contactSearchInput" class="form-control ps-5 rounded-pill shadow-sm" placeholder="Ketik nama, telepon, atau desa/kota..." style="font-size: 0.82rem;">
-        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+    <div class="input-group shadow-sm rounded-pill overflow-hidden bg-white border" style="height: 42px;">
+        <span class="input-group-text bg-white border-0 ps-3 pe-2 text-muted" style="display:flex; align-items:center;">
+            <i class="bi bi-search" style="font-size: 0.95rem;"></i>
+        </span>
+        <input type="text" id="contactSearchInput" class="form-control border-0 ps-1" placeholder="Ketik nama, telepon, atau desa/kota..." style="font-size: 0.82rem; box-shadow: none;">
     </div>
 </div>
 
@@ -419,14 +421,20 @@ function switchTab(tabName) {
     currentActiveTab = tabName;
     const secFarmers = document.getElementById('sectionFarmers');
     const secCustomers = document.getElementById('sectionCustomers');
+    const btnFarmers = document.getElementById('tabBtnFarmers');
+    const btnCustomers = document.getElementById('tabBtnCustomers');
 
     if (tabName === 'farmers') {
         secFarmers.style.display = 'block';
         secCustomers.style.display = 'none';
+        btnFarmers.className = 'btn btn-sm rounded-pill flex-fill fw-bold py-2 btn-success text-white shadow-sm';
+        btnCustomers.className = 'btn btn-sm rounded-pill flex-fill fw-bold py-2 btn-light text-muted';
         window.history.replaceState(null, null, '?tab=farmers');
     } else {
         secFarmers.style.display = 'none';
         secCustomers.style.display = 'block';
+        btnFarmers.className = 'btn btn-sm rounded-pill flex-fill fw-bold py-2 btn-light text-muted';
+        btnCustomers.className = 'btn btn-sm rounded-pill flex-fill fw-bold py-2 btn-success text-white shadow-sm';
         window.history.replaceState(null, null, '?tab=customers');
     }
 }

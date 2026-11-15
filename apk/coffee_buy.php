@@ -247,9 +247,11 @@ $kpi = $db->query("
             </div>
             <div class="modal-body p-3">
                 <!-- Search Box -->
-                <div class="position-relative mb-3">
-                    <input type="text" id="searchFarmerInput" class="form-control form-control-sm ps-5 rounded-pill" placeholder="Cari nama, desa, no hp...">
-                    <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                <div class="input-group input-group-sm mb-3 rounded-pill overflow-hidden bg-white border shadow-sm">
+                    <span class="input-group-text bg-white border-0 ps-3 pe-2 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="searchFarmerInput" class="form-control border-0 ps-1" placeholder="Cari nama, desa, no hp..." style="box-shadow: none;">
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mb-2">

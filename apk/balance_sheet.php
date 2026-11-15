@@ -121,12 +121,18 @@ $isBalance = (abs($grandTotalAktiva - $grandTotalPasiva) < 1);
             <span class="fw-bold text-info" style="font-size: 0.85rem;"><?= format_rupiah($totalAktivaTetap) ?></span>
         </div>
         <div class="list-group list-group-flush px-3 pb-2" style="font-size: 0.78rem;">
-            <?php foreach ($fixedAssets as $fa): ?>
-                <div class="list-group-item d-flex justify-content-between px-0 py-2">
-                    <span class="text-muted"><?= e($fa['category']) ?> <span class="badge bg-light text-dark font-monospace"><?= $fa['count_items'] ?> unit</span></span>
-                    <span class="fw-semibold"><?= format_rupiah($fa['total_val']) ?></span>
+            <?php if (empty($fixedAssets)): ?>
+                <div class="list-group-item text-muted py-2 px-0 text-center border-0 small">
+                    <i class="bi bi-box-seam me-1"></i>Belum ada aset tetap tercatat (Rp 0)
                 </div>
-            <?php endforeach; ?>
+            <?php else: ?>
+                <?php foreach ($fixedAssets as $fa): ?>
+                    <div class="list-group-item d-flex justify-content-between px-0 py-2">
+                        <span class="text-muted"><?= e($fa['category']) ?> <span class="badge bg-light text-dark font-monospace"><?= $fa['count_items'] ?> unit</span></span>
+                        <span class="fw-semibold"><?= format_rupiah($fa['total_val']) ?></span>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
         </div>
     </div>
 

@@ -50,7 +50,7 @@ $batches = $db->query("
     ORDER BY po.id DESC LIMIT 15
 ")->fetchAll();
 
-$products = $db->query("SELECT id, product_name, product_code FROM products WHERE is_active = 1 ORDER BY product_name ASC")->fetchAll();
+$products = $db->query("SELECT id, product_name, sku FROM products WHERE is_active = 1 ORDER BY product_name ASC")->fetchAll();
 ?>
 
 <div class="p-3">

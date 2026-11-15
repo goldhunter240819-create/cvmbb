@@ -39,7 +39,8 @@ $tablesToTruncate = [
     'position_histories',
     'farmers',
     'customers',
-    'suppliers'
+    'suppliers',
+    'inventory_assets'
 ];
 
 foreach ($tablesToTruncate as $tbl) {

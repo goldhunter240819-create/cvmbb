@@ -26,6 +26,14 @@ class Auth {
             if (!$colCheck) {
                 $db->exec("ALTER TABLE `users` ADD COLUMN `avatar` VARCHAR(255) NULL AFTER `email`");
             }
+
+            // Auto-migration 2: reset seed dummy assets jika flag belum ada
+            $flagFile = __DIR__ . '/../storage/flags/seed_assets_cleared.flag';
+            if (!file_exists($flagFile)) {
+                $db->exec("TRUNCATE TABLE `inventory_assets`");
+                @mkdir(dirname($flagFile), 0777, true);
+                @file_put_contents($flagFile, date('Y-m-d H:i:s'));
+            }
         } catch (\Throwable $e) {}
 
         $stmt = $db->prepare("
