@@ -33,6 +33,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         redirect('modules/developer/index.php');
     }
 
+    if ($action === 'reset_fresh_database') {
+        csrf_validate();
+        $db->exec("SET FOREIGN_KEY_CHECKS = 0;");
+        $tablesToTruncate = [
+            'purchases', 'purchase_details', 'sales', 'sale_details',
+            'roasting_orders', 'brilink_transactions', 'cash_transactions',
+            'division_activities', 'production_orders', 'expenses',
+            'receivables', 'payables', 'stock_movements', 'incoming_letters',
+            'outgoing_letters', 'documents', 'audit_logs', 'position_histories',
+            'farmers', 'customers', 'suppliers'
+        ];
+        foreach ($tablesToTruncate as $tbl) {
+            try { $db->exec("TRUNCATE TABLE `{$tbl}`"); } catch (Exception $e) {}
+        }
+        $db->exec("UPDATE cash_accounts SET current_balance = 0");
+        $db->exec("UPDATE brilink_accounts SET current_balance = 0");
+        $db->exec("UPDATE products SET current_stock = 0");
+        $db->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        log_audit('DEV_RESET_DB', 'developer', 0, "Developer Maul mengosongkan seluruh data transaksi menjadi Fresh.");
+        flash_set('success', 'Database berhasil dikosongkan (Fresh Slate)! Semua data transaksi kembali ke Rp 0, Master User & Organisasi tetap utuh.');
+        redirect('modules/developer/index.php');
+    }
+
     if ($action === 'clear_audit_logs') {
         csrf_validate();
         $db->exec("TRUNCATE TABLE audit_logs");
