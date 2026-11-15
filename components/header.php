@@ -44,8 +44,8 @@ $appTitle = ($pageTitle ?? 'Dashboard') . ' - ' . get_company_setting('app_name'
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
-    <!-- Custom MBB Theme CSS -->
-    <link rel="stylesheet" href="<?= asset_url('css/mbb-theme.css') ?>">
+    <!-- Custom MBB Theme CSS (with cache buster) -->
+    <link rel="stylesheet" href="<?= asset_url('css/mbb-theme.css?v=' . filemtime(__DIR__ . '/../assets/css/mbb-theme.css')) ?>">
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>

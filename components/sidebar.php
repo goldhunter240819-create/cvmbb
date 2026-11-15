@@ -16,6 +16,107 @@ $isBizActive = in_array($currentModule, $bizModules);
 $isAdmActive = in_array($currentModule, $admModules);
 $isSetActive = in_array($currentModule, $setModules);
 ?>
+<style>
+/* CSS Spesifik & Prioritas Tinggi untuk Sidebar Accordion MBB */
+.sidebar .sidebar-dropdown-toggle {
+    all: unset;
+    box-sizing: border-box;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    padding: 10px 14px !important;
+    color: #cbd5e1 !important;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    border-radius: 8px !important;
+    margin-bottom: 4px !important;
+    cursor: pointer !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+
+.sidebar .sidebar-dropdown-toggle:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.sidebar .sidebar-dropdown-toggle.active {
+    color: #38bdf8 !important;
+    background: rgba(14, 165, 233, 0.12) !important;
+    border: 1px solid rgba(14, 165, 233, 0.25) !important;
+    font-weight: 600 !important;
+}
+
+.sidebar .sidebar-dropdown-toggle.active i:first-child {
+    color: #38bdf8 !important;
+}
+
+.sidebar .sidebar-dropdown-toggle .chevron-icon {
+    font-size: 0.75rem !important;
+    color: #94a3b8 !important;
+    transition: transform 0.25s ease !important;
+    margin-right: 0 !important;
+}
+
+.sidebar .sidebar-dropdown-toggle[aria-expanded="true"] .chevron-icon {
+    transform: rotate(180deg) !important;
+    color: #38bdf8 !important;
+}
+
+.sidebar .sidebar-submenu-inner {
+    border-left: 2px solid rgba(255, 255, 255, 0.14) !important;
+    margin-left: 20px !important;
+    padding-left: 8px !important;
+    padding-top: 4px !important;
+    padding-bottom: 4px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+}
+
+.sidebar .nav-link-sub {
+    display: flex !important;
+    align-items: center !important;
+    padding: 8px 12px !important;
+    color: #94a3b8 !important;
+    text-decoration: none !important;
+    font-size: 0.83rem !important;
+    font-weight: 500 !important;
+    border-radius: 6px !important;
+    transition: all 0.2s ease !important;
+}
+
+.sidebar .nav-link-sub i {
+    font-size: 0.95rem !important;
+    margin-right: 10px !important;
+    color: #64748b !important;
+    transition: color 0.2s !important;
+}
+
+.sidebar .nav-link-sub:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    text-decoration: none !important;
+}
+
+.sidebar .nav-link-sub:hover i {
+    color: #38bdf8 !important;
+}
+
+.sidebar .nav-link-sub.active {
+    color: #ffffff !important;
+    background: linear-gradient(90deg, #0284c7 0%, #0369a1 100%) !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35) !important;
+    text-decoration: none !important;
+}
+
+.sidebar .nav-link-sub.active i {
+    color: #ffffff !important;
+}
+</style>
 <div id="sidebarBackdrop" class="d-none position-fixed top-0 start-0 w-100 h-100 bg-dark opacity-50 z-3"></div>
 
 <aside id="sidebar" class="sidebar">
