@@ -34,6 +34,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $totalCost    = $weightKg * $costPerKg;
         $profitAmount = $grandTotal - $totalCost;
 
+        $paymentStatus = sanitize($_POST['payment_status'] ?? 'LUNAS');
+        if (!in_array($paymentStatus, ['LUNAS', 'BELUM_BAYAR', 'SEBAGIAN'])) {
+            $paymentStatus = 'LUNAS';
+        }
+        $paidAmount = ($paymentStatus === 'LUNAS') ? $grandTotal : 0;
+
         if ($weightKg > 0 && $pricePerKg > 0) {
             $cStmt = $db->prepare("SELECT id FROM customers WHERE name = ? LIMIT 1");
             $cStmt->execute([$customerName]);
@@ -47,12 +53,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 INSERT INTO sales (
                     invoice_number, sale_date, customer_id, total_weight_kg, subtotal, 
                     grand_total, paid_amount, profit_amount, payment_status, notes, created_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'LUNAS', ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $invoiceNumber, $saleDate, $customerId, $weightKg, $grandTotal,
-                $grandTotal, $grandTotal, $profitAmount, $notes, Auth::id()
+                $grandTotal, $paidAmount, $profitAmount, $paymentStatus, $notes, Auth::id()
             ]);
+
+            if ($paymentStatus === 'BELUM_BAYAR') {
+                $db->prepare("
+                    INSERT INTO receivables (reference_number, business_line, debtor_name, total_amount, paid_amount, remaining_amount, status, notes)
+                    VALUES (?, 'Kopi Trading', ?, ?, 0, ?, 'BELUM_LUNAS', ?)
+                ")->execute([$invoiceNumber, $customerName, $grandTotal, $grandTotal, $notes]);
+            }
 
             log_audit('CREATE_COFFEE_SALE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat penjualan {$invoiceNumber} ke {$customerName}");
             flash_set('success', "Penjualan {$invoiceNumber} berhasil dicatat!");
@@ -215,7 +228,11 @@ $kpi = $db->query("
                     </div>
                     <div class="col-6">
                         <label class="form-label small fw-bold mb-1">Status Pembayaran</label>
-                        <input type="text" class="form-control form-control-sm bg-light text-success fw-bold" readonly value="LUNAS / CASH">
+                        <select name="payment_status" class="form-select form-select-sm fw-bold text-success">
+                            <option value="LUNAS" selected>Lunas / Cash</option>
+                            <option value="BELUM_BAYAR">Tempo / Hutang</option>
+                            <option value="SEBAGIAN">DP / Sebagian</option>
+                        </select>
                     </div>
                 </div>
                 <div class="p-2 bg-light rounded-3 mb-2 text-center">

@@ -29,12 +29,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
     $totalFee     = $weight * $feePerKg;
     $notes        = sanitize($_POST['notes'] ?? '');
 
+    $paymentStatus = sanitize($_POST['payment_status'] ?? 'LUNAS');
+    if (!in_array($paymentStatus, ['LUNAS', 'BELUM_BAYAR', 'SEBAGIAN'])) {
+        $paymentStatus = 'LUNAS';
+    }
+
     if ($weight > 0) {
         $cStmt = $db->prepare("SELECT id FROM customers WHERE name = ? LIMIT 1");
         $cStmt->execute([$customerName]);
         $customerId = $cStmt->fetchColumn();
         if (!$customerId) {
-            $db->prepare("INSERT INTO customers (customer_code, name, phone) VALUES (?, ?, ?)")->execute(['CUST-' . strtoupper(substr(uniqid(), -4)), $customerName, $phone]);
+            $db->prepare("INSERT INTO customers (code, name, phone) VALUES (?, ?, ?)")->execute(['CUST-' . strtoupper(substr(uniqid(), -4)), $customerName, $phone]);
             $customerId = $db->lastInsertId();
         }
 
@@ -42,11 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
             INSERT INTO roasting_orders (
                 order_number, order_date, customer_id, raw_weight_kg, roast_profile,
                 fee_per_kg, total_fee, work_status, payment_status, notes, created_by
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'ANTREAN', 'LUNAS', ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'ANTREAN', ?, ?, ?)
         ");
         $stmt->execute([
             $orderNumber, $orderDate, $customerId, $weight, $profile,
-            $feePerKg, $totalFee, $notes, Auth::id()
+            $feePerKg, $totalFee, $paymentStatus, $notes, Auth::id()
         ]);
 
         log_audit('CREATE_ROAST_ORDER_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat jasa roasting {$orderNumber}");
@@ -184,9 +189,19 @@ $kpi = $db->query("
                         </select>
                     </div>
                 </div>
-                <div class="mb-2">
-                    <label class="form-label small fw-bold mb-1">Ongkos Sangrai per Kg (Rp)</label>
-                    <input type="number" name="fee_per_kg" id="r_fee" class="form-control form-control-sm" value="15000" required>
+                <div class="row g-2 mb-2">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold mb-1">Ongkos per Kg (Rp)</label>
+                        <input type="number" name="fee_per_kg" id="r_fee" class="form-control form-control-sm" value="15000" required>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold mb-1">Status Pembayaran</label>
+                        <select name="payment_status" class="form-select form-select-sm fw-bold text-success">
+                            <option value="LUNAS" selected>Lunas / Cash</option>
+                            <option value="BELUM_BAYAR">Tempo / Belum Bayar</option>
+                            <option value="SEBAGIAN">DP / Sebagian</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="p-2 bg-light rounded-3 mb-2 text-center">
                     <span class="text-muted small d-block">Estimasi Total Ongkos Roasting:</span>
