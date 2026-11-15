@@ -24,6 +24,15 @@ $queryError = null;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
+    if ($action === 'git_pull') {
+        csrf_validate();
+        $gitOutput = shell_exec('git pull origin main 2>&1');
+        log_audit('DEV_GIT_PULL', 'developer', 0, "Developer Maul melakukan Git Pull via Portal Developer.");
+        flash_set('success', 'Git Pull selesai dieksekusi.');
+        $_SESSION['last_git_pull_output'] = $gitOutput;
+        redirect('modules/developer/index.php');
+    }
+
     if ($action === 'clear_audit_logs') {
         csrf_validate();
         $db->exec("TRUNCATE TABLE audit_logs");
@@ -64,6 +73,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // -------------------------------------------------------------
 // METRIK SERVER & DATABASE
 // -------------------------------------------------------------
+$lastCommit = trim(shell_exec('git log -1 --pretty=format:"%h - %s (%cr)" 2>&1') ?? '');
+$lastPullLog = $_SESSION['last_git_pull_output'] ?? null;
+unset($_SESSION['last_git_pull_output']);
 $dbTables = $db->query("
     SELECT 
         TABLE_NAME AS table_name,
@@ -139,6 +151,57 @@ require_once __DIR__ . '/../../components/topbar.php';
                         <i class="bi bi-speedometer2 me-1"></i> Optimasi Tabel
                     </button>
                 </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 1.5 GITHUB SYNC & WEB DEPLOY CONSOLE -->
+<div class="card-mbb mb-4 border-info border-opacity-50" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+    <div class="card-mbb-header bg-dark text-white d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-2">
+            <i class="bi bi-github text-info fs-5"></i>
+            <span class="fw-bold">GitHub Sync & Deployment Controller</span>
+            <span class="badge bg-success-subtle text-success border border-success font-monospace" style="font-size: 0.68rem;">LIVE SYNC READY</span>
+        </div>
+        <form method="POST" action="" onsubmit="this.querySelector('button').disabled = true; this.querySelector('button').innerHTML = '<span class=\'spinner-border spinner-border-sm me-1\'></span> Menarik kode...';">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="git_pull">
+            <button type="submit" class="btn btn-sm btn-info text-dark fw-bold px-3 shadow-sm">
+                <i class="bi bi-cloud-arrow-down-fill me-1"></i> Tarik Kode Terbaru (Git Pull)
+            </button>
+        </form>
+    </div>
+    <div class="card-mbb-body p-3">
+        <div class="row g-3 align-items-center mb-2">
+            <div class="col-md-4">
+                <div class="text-muted small">Repository GitHub</div>
+                <div class="fw-bold text-dark font-monospace" style="font-size: 0.85rem;">goldhunter240819-create/cvmbb</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted small">Branch Aktif</div>
+                <div class="fw-bold text-primary font-monospace" style="font-size: 0.85rem;"><i class="bi bi-git me-1"></i>main</div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-muted small">Commit Terakhir Terpasang</div>
+                <div class="text-truncate fw-semibold text-secondary font-monospace" style="font-size: 0.78rem;" title="<?= e($lastCommit) ?>"><?= e($lastCommit ?: 'Belum terdeteksi') ?></div>
+            </div>
+        </div>
+
+        <?php if ($lastPullLog): ?>
+            <div class="mt-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="text-muted small fw-bold"><i class="bi bi-terminal-fill me-1 text-dark"></i>Terminal Output Git Pull Terakhir:</span>
+                    <span class="badge bg-success" style="font-size: 0.65rem;">Selesai</span>
+                </div>
+                <pre class="bg-dark text-success p-3 rounded-3 mb-0 font-monospace" style="font-size: 0.78rem; max-height: 160px; overflow-y: auto; border: 1px solid #334155;"><?= e($lastPullLog) ?></pre>
+            </div>
+        <?php endif; ?>
+
+        <div class="alert alert-info py-2 px-3 small rounded-3 mb-0 mt-2 d-flex align-items-center gap-2" style="font-size: 0.75rem;">
+            <i class="bi bi-shield-check text-info fs-6"></i>
+            <div>
+                <strong>Perlindungan Database Aktif:</strong> Tombol Git Pull hanya memperbarui file kodingan sistem (PHP/CSS/JS). Seluruh data transaksi riil, buku kas, timbangan kopi petani, dan mutasi di database <strong>100% aman dan tidak akan tertimpa</strong>.
             </div>
         </div>
     </div>
