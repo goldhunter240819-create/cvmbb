@@ -15,6 +15,22 @@ Permission::requireDeveloper();
 
 $db = Database::getInstance();
 
+// Fallback helper jika helper belum ter-load sempurna
+if (!function_exists('csrf_validate')) {
+    function csrf_validate($redirectUrl = 'modules/developer/index.php') {
+        if (function_exists('verify_csrf_token') && !verify_csrf_token()) {
+            if (function_exists('flash_set')) {
+                flash_set('danger', 'Token CSRF tidak valid. Silakan coba kembali.');
+            }
+            if (function_exists('redirect')) {
+                redirect($redirectUrl);
+            }
+            exit;
+        }
+        return true;
+    }
+}
+
 // -------------------------------------------------------------
 // POST HANDLER DEVELOPER TOOLS
 // -------------------------------------------------------------

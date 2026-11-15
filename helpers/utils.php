@@ -85,6 +85,19 @@ function verify_csrf_token($token = null) {
     return !empty($token) && !empty($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+function csrf_validate($redirectUrl = null) {
+    if (!verify_csrf_token()) {
+        flash_set('danger', 'Sesi keamanan berakhir atau token tidak valid. Silakan coba lagi.');
+        if ($redirectUrl) {
+            redirect($redirectUrl);
+        } else {
+            redirect($_SERVER['REQUEST_URI'] ?? 'index.php');
+        }
+        exit;
+    }
+    return true;
+}
+
 /**
  * Flash Notification System
  */
