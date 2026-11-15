@@ -170,6 +170,29 @@ document.addEventListener('DOMContentLoaded', function () {
             confirmButtonColor: '#1a56db'
         });
     });
+
+    // 4. Flash Messages sebagai Floating SweetAlert2 Toast (Tanpa Menggeser Layout Halaman)
+    <?php if (function_exists('flash_has') && flash_has()): ?>
+        <?php
+        $flashes = $_SESSION['flash_messages'] ?? [];
+        $_SESSION['flash_messages'] = [];
+        ?>
+        const flashes = <?= json_encode($flashes) ?>;
+        flashes.forEach(function (f) {
+            Swal.fire({
+                toast: true,
+                position: 'top',
+                icon: f.type === 'danger' ? 'error' : (f.type === 'warning' ? 'warning' : 'success'),
+                title: f.message,
+                showConfirmButton: false,
+                timer: 3500,
+                timerProgressBar: true,
+                customClass: {
+                    popup: 'rounded-4 shadow-lg py-2 px-3 border-0'
+                }
+            });
+        });
+    <?php endif; ?>
 });
 
 // PWA Service Worker Registration

@@ -140,8 +140,19 @@ require_once __DIR__ . '/../../components/topbar.php';
                                 <td class="ps-4 text-muted"><?= $idx + 1 ?></td>
                                 <td class="fw-bold text-primary"><?= e($emp['employee_code']) ?></td>
                                 <td>
-                                    <div class="fw-bold text-dark"><?= e($emp['full_name']) ?></div>
-                                    <small class="text-muted"><?= e($emp['address'] ?: '-') ?></small>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <?php if (!empty($emp['avatar']) && file_exists(__DIR__ . '/../../' . $emp['avatar'])): ?>
+                                            <img src="<?= base_url($emp['avatar']) ?>?v=<?= time() ?>" alt="Avatar" class="rounded-circle border" style="width: 34px; height: 34px; object-fit: cover; flex-shrink: 0;">
+                                        <?php else: ?>
+                                            <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary-subtle text-primary fw-bold border" style="width: 34px; height: 34px; font-size: 0.8rem; flex-shrink: 0;">
+                                                <?= strtoupper(substr($emp['full_name'], 0, 2)) ?>
+                                            </div>
+                                        <?php endif; ?>
+                                        <div>
+                                            <div class="fw-bold text-dark"><?= e($emp['full_name']) ?></div>
+                                            <small class="text-muted"><?= e($emp['address'] ?: '-') ?></small>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td>
                                     <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
@@ -162,7 +173,9 @@ require_once __DIR__ . '/../../components/topbar.php';
                                             <i class="bi bi-check2"></i> <?= e($emp['username']) ?>
                                         </span>
                                     <?php else: ?>
-                                        <span class="badge bg-light text-muted border">Tanpa Akun</span>
+                                        <a href="<?= base_url('modules/employees/edit.php?id=' . $emp['id']) ?>" class="badge bg-light text-primary border border-primary-subtle text-decoration-none">
+                                            <i class="bi bi-plus-circle me-1"></i>Buat Akun
+                                        </a>
                                     <?php endif; ?>
                                 </td>
                                 <?php if (Permission::can('employees.manage')): ?>

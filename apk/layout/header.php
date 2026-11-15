@@ -322,9 +322,3 @@ $localIp         = gethostbyname(gethostname());
 
     <!-- ISI KONTEN APLIKASI -->
     <div class="app-content-body">
-        <!-- Flash notification -->
-        <?php if (function_exists('flash_has') && flash_has()): ?>
-            <div class="p-3 pb-0">
-                <?= flash_display() ?>
-            </div>
-        <?php endif; ?>
