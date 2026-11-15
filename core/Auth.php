@@ -19,8 +19,17 @@ class Auth {
         }
 
         $db = Database::getInstance();
+
+        // Auto-migration aman jika kolom avatar belum ada di tabel users server
+        try {
+            $colCheck = $db->query("SHOW COLUMNS FROM `users` LIKE 'avatar'")->fetch();
+            if (!$colCheck) {
+                $db->exec("ALTER TABLE `users` ADD COLUMN `avatar` VARCHAR(255) NULL AFTER `email`");
+            }
+        } catch (\Throwable $e) {}
+
         $stmt = $db->prepare("
-            SELECT u.*, COALESCE(u.avatar, e.avatar) AS avatar, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
+            SELECT u.*, e.avatar AS employee_avatar, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
             FROM users u
             INNER JOIN roles r ON u.role_id = r.id
             LEFT JOIN employees e ON u.employee_id = e.id
@@ -31,6 +40,10 @@ class Auth {
         ");
         $stmt->execute([$username, $username]);
         $user = $stmt->fetch();
+
+        if ($user) {
+            $user['avatar'] = !empty($user['avatar']) ? $user['avatar'] : ($user['employee_avatar'] ?? null);
+        }
 
         if (!$user) {
             log_audit('LOGIN_FAILED', 'auth', null, "Percobaan login gagal untuk username/email: {$username}");
@@ -122,7 +135,7 @@ class Auth {
 
         $db = Database::getInstance();
         $stmt = $db->prepare("
-            SELECT u.*, COALESCE(u.avatar, e.avatar) AS avatar, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
+            SELECT u.*, e.avatar AS employee_avatar, r.role_name, r.role_title, e.full_name, e.employee_code, p.position_name, d.division_name
             FROM users u
             INNER JOIN roles r ON u.role_id = r.id
             LEFT JOIN employees e ON u.employee_id = e.id
@@ -131,7 +144,11 @@ class Auth {
             WHERE u.id = ?
         ");
         $stmt->execute([$_SESSION['user_id']]);
-        self::$cachedUser = $stmt->fetch() ?: null;
+        $row = $stmt->fetch();
+        if ($row) {
+            $row['avatar'] = !empty($row['avatar']) ? $row['avatar'] : ($row['employee_avatar'] ?? null);
+        }
+        self::$cachedUser = $row ?: null;
         return self::$cachedUser;
     }
 
