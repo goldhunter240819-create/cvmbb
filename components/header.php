@@ -21,12 +21,12 @@ $appTitle = ($pageTitle ?? 'Dashboard') . ' - ' . get_company_setting('app_name'
     <title><?= e($appTitle) ?></title>
 
     <!-- Favicon / Tab Icon sesuai instruksi user -->
-    <link rel="icon" type="image/png" href="<?= asset_url('images/logo.png') ?>">
-    <link rel="shortcut icon" type="image/png" href="<?= asset_url('images/logo.png') ?>">
-    <link rel="apple-touch-icon" href="<?= asset_url('images/logo.png') ?>">
+    <link rel="icon" type="image/png" href="<?= asset_url('images/logo.png?v=' . filemtime(__DIR__ . '/../assets/images/logo.png')) ?>">
+    <link rel="shortcut icon" type="image/png" href="<?= asset_url('images/logo.png?v=' . filemtime(__DIR__ . '/../assets/images/logo.png')) ?>">
+    <link rel="apple-touch-icon" href="<?= asset_url('images/logo.png?v=' . filemtime(__DIR__ . '/../assets/images/logo.png')) ?>">
 
     <!-- PWA & Mobile App Settings -->
-    <link rel="manifest" href="<?= base_url('manifest.json') ?>">
+    <link rel="manifest" href="<?= base_url('manifest.json?v=' . filemtime(__DIR__ . '/../manifest.json')) ?>">
     <meta name="theme-color" content="#0d1e3a">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">

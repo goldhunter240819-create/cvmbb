@@ -1,10 +1,12 @@
 // MBB Business Management System - PWA Service Worker
-const CACHE_NAME = 'mbb-mobile-pwa-v3';
+const CACHE_NAME = 'mbb-mobile-pwa-v4';
 const STATIC_ASSETS = [
     './manifest.json',
     './apk/manifest.json',
     './assets/images/logo.png',
     './assets/images/logoapk.png',
+    './assets/images/logoapk-192.png',
+    './assets/images/logoapk-512.png',
     './assets/css/mbb-theme.css',
     './assets/js/mbb-app.js'
 ];
