@@ -273,8 +273,7 @@ $kpi = $db->query("
                             "total"        => (float)$p["grand_total"],
                             "paid"         => (float)$p["paid_amount"],
                             "status"       => $payStatus,
-                            "notes"        => $p["notes"] ?? "",
-                            "qr"           => generate_qr_base64(base_url('apk/verify.php?inv=' . urlencode($p["invoice_number"])))
+                            "notes"        => $p["notes"] ?? ""
                         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
                     <i class="bi bi-whatsapp fs-6"></i>
                     <span style="font-size: 0.78rem;">Kirim Struk ke WA</span>
@@ -613,17 +612,17 @@ $kpi = $db->query("
                         </div>
                     </div>
 
-                    <!-- QR Code Validasi Resmi -->
-                    <div class="py-3 text-center border-bottom border-dashed bg-light bg-opacity-50 rounded-3 my-2">
-                        <div class="d-inline-block p-2 bg-white rounded-3 border shadow-sm mb-2" style="border-color: #e2e8f0 !important;">
-                            <img id="rc_qrcode_img" src="" alt="QR Validasi" style="width: 105px; height: 105px; display: block; margin: 0 auto; image-rendering: pixelated; object-fit: contain;">
+                    <!-- Validasi Digital & Link Online -->
+                    <div class="py-3 px-2 text-center border-bottom border-dashed bg-light bg-opacity-50 rounded-3 my-2">
+                        <div class="fw-bold text-success d-flex align-items-center justify-content-center gap-1 mb-1" style="font-size: 0.75rem; letter-spacing: 0.3px;">
+                            <i class="bi bi-patch-check-fill text-success"></i>
+                            <span>STRUK DIGITAL TERVERIFIKASI</span>
                         </div>
-                        <div class="fw-bold text-dark d-flex align-items-center justify-content-center gap-1" style="font-size: 0.72rem; letter-spacing: 0.3px;">
-                            <i class="bi bi-qr-code-scan text-success"></i>
-                            <span>PINDAI UNTUK VALIDASI RESMI</span>
+                        <div class="text-muted mb-2" style="font-size: 0.65rem;">
+                            Validasi keaslian transaksi online dapat diakses melalui link resmi:
                         </div>
-                        <div class="text-muted" style="font-size: 0.65rem;">
-                            Scan QR Code dengan kamera HP untuk verifikasi keaslian
+                        <div class="px-2 py-1 bg-white rounded border text-break font-monospace fw-bold text-success shadow-sm" style="font-size: 0.68rem; border-color: #cbd5e1 !important;" id="rc_verify_url_box">
+                            -
                         </div>
                     </div>
 
@@ -858,23 +857,11 @@ function populateReceiptCard(data) {
         notesContainer.style.display = 'none';
     }
 
-    // Render QR Code Validasi Resmi (100% Reliable Server-Generated PNG Image)
-    const qrImg = document.getElementById('rc_qrcode_img');
-    if (qrImg) {
-        if (data.qr && typeof data.qr === 'string' && data.qr.startsWith('data:image/')) {
-            qrImg.src = data.qr;
-        } else {
-            qrImg.src = 'get_qr.php?inv=' + encodeURIComponent(data.invoice) + '&raw=1';
-            fetch('get_qr.php?inv=' + encodeURIComponent(data.invoice))
-                .then(r => r.json())
-                .then(res => {
-                    if (res && res.qr) {
-                        qrImg.src = res.qr;
-                        data.qr = res.qr;
-                    }
-                })
-                .catch(err => console.error('Fetch QR Error:', err));
-        }
+    // Tampilkan Link Validasi Resmi MBB
+    const verifyUrl = getReceiptValidationUrl(data.invoice);
+    const linkBox = document.getElementById('rc_verify_url_box');
+    if (linkBox) {
+        linkBox.textContent = verifyUrl;
     }
 }
 
@@ -942,22 +929,6 @@ async function executeShareReceiptImage() {
     btn.disabled = true;
 
     try {
-        const qrImg = document.getElementById('rc_qrcode_img');
-        if (qrImg) {
-            if (!qrImg.src && currentWaReceiptData?.qr) {
-                qrImg.src = currentWaReceiptData.qr;
-            } else if (!qrImg.src && currentWaReceiptData?.invoice) {
-                qrImg.src = 'get_qr.php?inv=' + encodeURIComponent(currentWaReceiptData.invoice) + '&raw=1';
-            }
-            if (qrImg.src && !qrImg.complete) {
-                await new Promise((resolve) => {
-                    qrImg.onload = resolve;
-                    qrImg.onerror = resolve;
-                    setTimeout(resolve, 350);
-                });
-            }
-        }
-
         const receiptCard = document.getElementById('receiptCardToCapture');
         const canvas = await html2canvas(receiptCard, {
             scale: 2.5,
@@ -1018,21 +989,6 @@ async function executeShareReceiptImage() {
 }
 
 async function downloadReceiptPngOnly() {
-    const qrImg = document.getElementById('rc_qrcode_img');
-    if (qrImg) {
-        if (!qrImg.src && currentWaReceiptData?.qr) {
-            qrImg.src = currentWaReceiptData.qr;
-        } else if (!qrImg.src && currentWaReceiptData?.invoice) {
-            qrImg.src = 'get_qr.php?inv=' + encodeURIComponent(currentWaReceiptData.invoice) + '&raw=1';
-        }
-        if (qrImg.src && !qrImg.complete) {
-            await new Promise((resolve) => {
-                qrImg.onload = resolve;
-                qrImg.onerror = resolve;
-                setTimeout(resolve, 350);
-            });
-        }
-    }
     const receiptCard = document.getElementById('receiptCardToCapture');
     const canvas = await html2canvas(receiptCard, { scale: 2.5, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
     const link = document.createElement('a');
