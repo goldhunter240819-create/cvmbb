@@ -43,6 +43,14 @@ $localIp = gethostbyname(gethostname());
 <!-- html2canvas for Generating Image Receipts ala GoPay / E-Wallet -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
+<!-- QRCode Generator for Digital Receipt Validation -->
+<script src="<?= base_url('assets/js/qrcode.min.js') ?>"></script>
+<script>
+if (typeof QRCode === 'undefined') {
+    document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>');
+}
+</script>
+
 <style>
 /* Modern SweetAlert2 UI Styling ala Mobile iOS / E-Wallet */
 .swal2-popup {

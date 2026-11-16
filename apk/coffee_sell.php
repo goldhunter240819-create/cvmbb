@@ -545,17 +545,21 @@ $kpi = $db->query("
             <div class="modal-body p-3 bg-light">
                 <!-- STRUK CARD TO BE CONVERTED TO IMAGE -->
                 <div id="receiptSellCardToCapture" class="p-4 bg-white rounded-4 shadow-sm mx-auto position-relative" style="max-width: 350px; font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; border: 1px solid #e2e8f0;">
-                    <!-- Header Struk -->
+                    <!-- Header Struk (Symmetric & Centered Layout) -->
                     <div class="text-center pb-3 border-bottom border-dashed">
-                        <div class="d-inline-flex p-2 rounded-circle bg-primary bg-opacity-10 text-primary mb-2">
-                            <i class="bi bi-check-circle-fill fs-1"></i>
-                        </div>
-                        <div class="badge bg-primary text-white px-3 py-1 rounded-pill small fw-bold mb-1">
-                            PENJUALAN BERHASIL
-                        </div>
-                        <h3 class="fw-bold text-dark mb-0 mt-1" id="rc_sell_grand_total">Rp 0</h3>
-                        <div class="text-muted small mt-1" style="font-size: 0.72rem;">
-                            CV. MAJU BERKAH BERSAMA
+                        <div class="d-flex flex-column align-items-center justify-content-center">
+                            <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center mb-2" style="width: 54px; height: 54px; margin: 0 auto;">
+                                <i class="bi bi-check-circle-fill fs-2"></i>
+                            </div>
+                            <div class="mb-2">
+                                <span class="badge bg-primary text-white px-3 py-1 rounded-pill fw-bold" style="font-size: 0.72rem; letter-spacing: 0.5px;">
+                                    PENJUALAN BERHASIL
+                                </span>
+                            </div>
+                            <h3 class="fw-bold text-dark mb-0" id="rc_sell_grand_total">Rp 0</h3>
+                            <div class="text-muted small mt-1 fw-semibold" style="font-size: 0.72rem; letter-spacing: 0.3px;">
+                                CV. MAJU BERKAH BERSAMA
+                            </div>
                         </div>
                     </div>
 
@@ -600,8 +604,22 @@ $kpi = $db->query("
                         </div>
                     </div>
 
+                    <!-- QR Code Validasi Resmi -->
+                    <div class="py-3 text-center border-bottom border-dashed bg-light bg-opacity-50 rounded-3 my-2">
+                        <div class="d-inline-block p-2 bg-white rounded-3 border shadow-sm mb-2" style="border-color: #e2e8f0 !important;">
+                            <div id="rc_sell_qrcode" style="width: 90px; height: 90px; margin: 0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                        </div>
+                        <div class="fw-bold text-dark d-flex align-items-center justify-content-center gap-1" style="font-size: 0.72rem; letter-spacing: 0.3px;">
+                            <i class="bi bi-qr-code-scan text-primary"></i>
+                            <span>PINDAI UNTUK VALIDASI RESMI</span>
+                        </div>
+                        <div class="text-muted" style="font-size: 0.65rem;">
+                            Scan QR Code dengan kamera HP untuk verifikasi keaslian
+                        </div>
+                    </div>
+
                     <!-- Footer Struk -->
-                    <div class="pt-3 text-center" style="font-size: 0.68rem; color: #94a3b8;">
+                    <div class="pt-2 text-center" style="font-size: 0.68rem; color: #94a3b8;">
                         <i class="bi bi-shield-check text-primary me-1"></i>Faktur Digital Sah & Resmi MBB Field System<br>
                         Gudang Air Hitam, Lampung Barat
                     </div>
@@ -744,6 +762,12 @@ function cleanPhoneForWa(phone) {
     return cleaned;
 }
 
+function getReceiptValidationUrl(invoice) {
+    const loc = window.location;
+    const path = loc.pathname.substring(0, loc.pathname.lastIndexOf('/'));
+    return `${loc.origin}${path}/verify.php?inv=${encodeURIComponent(invoice)}`;
+}
+
 function buildSellWaInvoiceText(data) {
     const formatRp = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
     const weightKg = Number(data.weight || 0).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 2});
@@ -759,6 +783,7 @@ function buildSellWaInvoiceText(data) {
     }
 
     let noteText = data.notes ? `\n📝 *Catatan :* ${data.notes}` : '';
+    const verifyUrl = getReceiptValidationUrl(data.invoice);
 
     return `📑 *FAKTUR PENJUALAN KOPI*\n*CV. MAJU BERKAH BERSAMA*\n━━━━━━━━━━━━━━━━━━━\n` +
            `No. Faktur : *${data.invoice}*\n` +
@@ -772,6 +797,8 @@ function buildSellWaInvoiceText(data) {
            paymentDetail +
            noteText +
            `\n━━━━━━━━━━━━━━━━━━━\n` +
+           `🔍 *Validasi Faktur Online :*\n${verifyUrl}\n` +
+           `━━━━━━━━━━━━━━━━━━━\n` +
            `_Faktur digital resmi diterbitkan oleh MBB Field System._\n_Terima kasih atas kerja samanya._`;
 }
 
@@ -815,6 +842,24 @@ function populateSellReceiptCard(data) {
     } else {
         notesContainer.style.display = 'none';
     }
+
+    // Render QR Code Validasi Resmi
+    const qrEl = document.getElementById('rc_sell_qrcode');
+    if (qrEl) {
+        qrEl.innerHTML = '';
+        const verifyUrl = getReceiptValidationUrl(data.invoice);
+        if (typeof QRCode !== 'undefined') {
+            new QRCode(qrEl, {
+                text: verifyUrl,
+                width: 90,
+                height: 90,
+                colorDark: '#1e3a8a',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.M
+            });
+        }
+    }
+}
 }
 
 function prepareSellWaInvoice(data) {
