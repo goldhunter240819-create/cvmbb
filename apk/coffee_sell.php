@@ -4,16 +4,14 @@
  * CV. MAJU BERKAH BERSAMA
  */
 
-$mobilePageTitle = 'Penjualan Kopi Trading';
-$currentApkNav   = 'coffee';
+require_once __DIR__ . '/../core/Auth.php';
+require_once __DIR__ . '/../core/Permission.php';
+require_once __DIR__ . '/../core/Database.php';
+require_once __DIR__ . '/../helpers/utils.php';
 
-$mobileHeaderAction = '
-    <button type="button" class="btn btn-sm btn-light rounded-circle p-0" style="width: 34px; height: 34px; display:flex; align-items:center; justify-content:center;" data-bs-toggle="modal" data-bs-target="#modalAddSale" title="Catat Penjualan">
-        <i class="bi bi-plus-lg text-primary fw-bold"></i>
-    </button>
-';
-
-require_once __DIR__ . '/layout/header.php';
+Auth::requireLogin('apk/login.php');
+$user = Auth::user();
+$db = Database::getInstance();
 
 // Form Handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -127,6 +125,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+$mobilePageTitle = 'Penjualan Kopi Trading';
+$currentApkNav   = 'coffee';
+
+$mobileHeaderAction = '
+    <button type="button" class="btn btn-sm btn-light rounded-circle p-0" style="width: 34px; height: 34px; display:flex; align-items:center; justify-content:center;" data-bs-toggle="modal" data-bs-target="#modalAddSale" title="Catat Penjualan">
+        <i class="bi bi-plus-lg text-primary fw-bold"></i>
+    </button>
+';
+
+require_once __DIR__ . '/layout/header.php';
 
 // Queries
 $customersList = $db->query("SELECT id, code, name, customer_type, phone, address FROM customers ORDER BY name ASC")->fetchAll();
@@ -264,7 +273,8 @@ $kpi = $db->query("
                             "total"          => (float)$s["grand_total"],
                             "paid"           => (float)$s["paid_amount"],
                             "status"         => $payStatus,
-                            "notes"          => $s["notes"] ?? ""
+                            "notes"          => $s["notes"] ?? "",
+                            "qr"             => generate_qr_base64(base_url('apk/verify.php?inv=' . urlencode($s["invoice_number"])))
                         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
                     <i class="bi bi-whatsapp fs-6"></i>
                     <span style="font-size: 0.78rem;">Kirim Faktur WA (Gambar & Teks)</span>
@@ -607,7 +617,7 @@ $kpi = $db->query("
                     <!-- QR Code Validasi Resmi -->
                     <div class="py-3 text-center border-bottom border-dashed bg-light bg-opacity-50 rounded-3 my-2">
                         <div class="d-inline-block p-2 bg-white rounded-3 border shadow-sm mb-2" style="border-color: #e2e8f0 !important;">
-                            <canvas id="rc_sell_qrcode_canvas" width="100" height="100" style="width: 100px; height: 100px; display: block; margin: 0 auto;"></canvas>
+                            <img id="rc_sell_qrcode_img" src="" alt="QR Validasi" style="width: 105px; height: 105px; display: block; margin: 0 auto; image-rendering: pixelated; object-fit: contain;">
                         </div>
                         <div class="fw-bold text-dark d-flex align-items-center justify-content-center gap-1" style="font-size: 0.72rem; letter-spacing: 0.3px;">
                             <i class="bi bi-qr-code-scan text-primary"></i>
@@ -843,32 +853,22 @@ function populateSellReceiptCard(data) {
         notesContainer.style.display = 'none';
     }
 
-    // Render QR Code Validasi Resmi (Canvas Engine)
-    renderSellReceiptQr(data.invoice);
-}
-
-async function renderSellReceiptQr(invoice) {
-    const qrCanvas = document.getElementById('rc_sell_qrcode_canvas');
-    if (!qrCanvas) return;
-    const verifyUrl = getReceiptValidationUrl(invoice);
-
-    for (let i = 0; i < 25; i++) {
-        if (typeof QRCode !== 'undefined' && QRCode.toCanvas) break;
-        await new Promise(r => setTimeout(r, 100));
-    }
-
-    if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
-        try {
-            await QRCode.toCanvas(qrCanvas, verifyUrl, {
-                width: 100,
-                margin: 1,
-                color: {
-                    dark: '#1e3a8a',
-                    light: '#ffffff'
-                }
-            });
-        } catch (err) {
-            console.error('QR Render Error:', err);
+    // Render QR Code Validasi Resmi (100% Reliable Server-Generated PNG Image)
+    const qrImg = document.getElementById('rc_sell_qrcode_img');
+    if (qrImg) {
+        if (data.qr && typeof data.qr === 'string' && data.qr.startsWith('data:image/')) {
+            qrImg.src = data.qr;
+        } else {
+            qrImg.src = 'get_qr.php?inv=' + encodeURIComponent(data.invoice) + '&raw=1';
+            fetch('get_qr.php?inv=' + encodeURIComponent(data.invoice))
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.qr) {
+                        qrImg.src = res.qr;
+                        data.qr = res.qr;
+                    }
+                })
+                .catch(err => console.error('Fetch QR Error:', err));
         }
     }
 }
@@ -936,14 +936,27 @@ async function executeShareSellReceiptImage() {
     btn.disabled = true;
 
     try {
-        // Pastikan QR Code sudah ter-render sempurna ke dalam canvas
-        await renderSellReceiptQr(currentSellWaData.invoice);
-        await new Promise(r => setTimeout(r, 150));
+        const qrImg = document.getElementById('rc_sell_qrcode_img');
+        if (qrImg) {
+            if (!qrImg.src && currentSellWaData?.qr) {
+                qrImg.src = currentSellWaData.qr;
+            } else if (!qrImg.src && currentSellWaData?.invoice) {
+                qrImg.src = 'get_qr.php?inv=' + encodeURIComponent(currentSellWaData.invoice) + '&raw=1';
+            }
+            if (qrImg.src && !qrImg.complete) {
+                await new Promise((resolve) => {
+                    qrImg.onload = resolve;
+                    qrImg.onerror = resolve;
+                    setTimeout(resolve, 350);
+                });
+            }
+        }
 
         const receiptCard = document.getElementById('receiptSellCardToCapture');
         const canvas = await html2canvas(receiptCard, {
             scale: 2.5,
             useCORS: true,
+            allowTaint: true,
             backgroundColor: '#ffffff'
         });
 
@@ -998,14 +1011,26 @@ async function executeShareSellReceiptImage() {
 }
 
 async function downloadSellReceiptPngOnly() {
-    if (currentSellWaData) {
-        await renderSellReceiptQr(currentSellWaData.invoice);
+    const qrImg = document.getElementById('rc_sell_qrcode_img');
+    if (qrImg) {
+        if (!qrImg.src && currentSellWaData?.qr) {
+            qrImg.src = currentSellWaData.qr;
+        } else if (!qrImg.src && currentSellWaData?.invoice) {
+            qrImg.src = 'get_qr.php?inv=' + encodeURIComponent(currentSellWaData.invoice) + '&raw=1';
+        }
+        if (qrImg.src && !qrImg.complete) {
+            await new Promise((resolve) => {
+                qrImg.onload = resolve;
+                qrImg.onerror = resolve;
+                setTimeout(resolve, 350);
+            });
+        }
     }
-    await new Promise(r => setTimeout(r, 150));
     const receiptCard = document.getElementById('receiptSellCardToCapture');
     const canvas = await html2canvas(receiptCard, {
         scale: 2.5,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: '#ffffff'
     });
     const link = document.createElement('a');

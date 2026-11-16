@@ -4,23 +4,26 @@
  * CV. MAJU BERKAH BERSAMA
  */
 
-$mobilePageTitle = 'Keuangan & Kas';
-$currentApkNav   = 'finance';
+require_once __DIR__ . '/../core/Auth.php';
+require_once __DIR__ . '/../core/Permission.php';
+require_once __DIR__ . '/../core/Database.php';
+require_once __DIR__ . '/../helpers/utils.php';
 
-$mobileHeaderAction = '
-    <div class="dropdown">
-        <button type="button" class="btn btn-sm btn-light rounded-circle p-0" style="width: 34px; height: 34px; display:flex; align-items:center; justify-content:center;" data-bs-toggle="dropdown" title="Menu Kas">
-            <i class="bi bi-three-dots-vertical text-primary fw-bold"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3" style="font-size: 0.85rem;">
-            <li><a class="dropdown-item py-2 fw-semibold" href="#" data-bs-toggle="modal" data-bs-target="#modalAddCash"><i class="bi bi-plus-circle text-primary me-2"></i>Catat Mutasi Kas</a></li>
-            <li><a class="dropdown-item py-2 fw-semibold" href="#" data-bs-toggle="modal" data-bs-target="#modalManageCategories"><i class="bi bi-tags text-warning me-2"></i>Kelola Kategori Kas</a></li>
-            <li><a class="dropdown-item py-2 fw-semibold" href="#" data-bs-toggle="modal" data-bs-target="#modalDetailKas"><i class="bi bi-wallet2 text-info me-2"></i>Rincian Rekening Kas</a></li>
-        </ul>
-    </div>
-';
+Auth::requireLogin('apk/login.php');
+$user = Auth::user();
+$db = Database::getInstance();
 
-require_once __DIR__ . '/layout/header.php';
+// Pastikan Tabel finance_categories Ada & Terisi Secara Otomatis & Aman
+$db->exec("
+    CREATE TABLE IF NOT EXISTS `finance_categories` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `category_type` ENUM('IN', 'OUT') NOT NULL,
+        `name` VARCHAR(100) NOT NULL,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_type (category_type)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+");
 
 // Form Handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -88,20 +91,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+$mobilePageTitle = 'Keuangan & Kas';
+$currentApkNav   = 'finance';
+
+$mobileHeaderAction = '
+    <div class="dropdown">
+        <button type="button" class="btn btn-sm btn-light rounded-circle p-0" style="width: 34px; height: 34px; display:flex; align-items:center; justify-content:center;" data-bs-toggle="dropdown" title="Menu Kas">
+            <i class="bi bi-three-dots-vertical text-primary fw-bold"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3" style="font-size: 0.85rem;">
+            <li><a class="dropdown-item py-2 fw-semibold" href="#" data-bs-toggle="modal" data-bs-target="#modalAddCash"><i class="bi bi-plus-circle text-primary me-2"></i>Catat Mutasi Kas</a></li>
+            <li><a class="dropdown-item py-2 fw-semibold" href="#" data-bs-toggle="modal" data-bs-target="#modalManageCategories"><i class="bi bi-tags text-warning me-2"></i>Kelola Kategori Kas</a></li>
+            <li><a class="dropdown-item py-2 fw-semibold" href="#" data-bs-toggle="modal" data-bs-target="#modalDetailKas"><i class="bi bi-wallet2 text-info me-2"></i>Rincian Rekening Kas</a></li>
+        </ul>
+    </div>
+';
+
+require_once __DIR__ . '/layout/header.php';
+
 // Queries
 $accounts = $db->query("SELECT * FROM cash_accounts WHERE is_active = 1 ORDER BY id ASC")->fetchAll();
 $totalLiquid = array_sum(array_column($accounts, 'current_balance'));
-
-// Pastikan Tabel finance_categories Ada & Terisi Secara Otomatis & Aman
-$db->exec("
-    CREATE TABLE IF NOT EXISTS `finance_categories` (
-        `id` INT AUTO_INCREMENT PRIMARY KEY,
-        `category_type` ENUM('IN', 'OUT') NOT NULL,
-        `name` VARCHAR(100) NOT NULL,
-        `is_active` TINYINT(1) DEFAULT 1,
-        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-");
 
 try {
     $inCategories = $db->query("SELECT id, name FROM finance_categories WHERE category_type = 'IN' AND is_active = 1 ORDER BY name ASC")->fetchAll();

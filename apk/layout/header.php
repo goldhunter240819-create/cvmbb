@@ -1,4 +1,5 @@
 <?php
+if (ob_get_level() === 0) ob_start();
 /**
  * MBB MOBILE APK - Layout Header
  * CV. MAJU BERKAH BERSAMA

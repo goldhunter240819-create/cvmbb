@@ -4,22 +4,14 @@
  * CV. MAJU BERKAH BERSAMA
  */
 
-$mobilePageTitle = 'Buku Hutang & Piutang';
-$currentApkNav   = 'debts';
+require_once __DIR__ . '/../core/Auth.php';
+require_once __DIR__ . '/../core/Permission.php';
+require_once __DIR__ . '/../core/Database.php';
+require_once __DIR__ . '/../helpers/utils.php';
 
-$mobileHeaderAction = '
-    <div class="dropdown">
-        <button type="button" class="btn btn-sm btn-light rounded-circle p-0" style="width: 34px; height: 34px; display:flex; align-items:center; justify-content:center;" data-bs-toggle="dropdown" aria-expanded="false" title="Tambah Catatan">
-            <i class="bi bi-plus-lg text-primary fw-bold"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3" style="font-size: 0.85rem;">
-            <li><a class="dropdown-item py-2 fw-semibold text-success" href="#" data-bs-toggle="modal" data-bs-target="#modalAddReceivable"><i class="bi bi-arrow-down-left-circle-fill me-2"></i>Catat Piutang (Tagihan)</a></li>
-            <li><a class="dropdown-item py-2 fw-semibold text-danger" href="#" data-bs-toggle="modal" data-bs-target="#modalAddPayable"><i class="bi bi-arrow-up-right-circle-fill me-2"></i>Catat Hutang (Kewajiban)</a></li>
-        </ul>
-    </div>
-';
-
-require_once __DIR__ . '/layout/header.php';
+Auth::requireLogin('apk/login.php');
+$user = Auth::user();
+$db = Database::getInstance();
 
 // Form Handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -189,6 +181,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+$mobilePageTitle = 'Buku Hutang & Piutang';
+$currentApkNav   = 'debts';
+
+$mobileHeaderAction = '
+    <div class="dropdown">
+        <button type="button" class="btn btn-sm btn-light rounded-circle p-0" style="width: 34px; height: 34px; display:flex; align-items:center; justify-content:center;" data-bs-toggle="dropdown" aria-expanded="false" title="Tambah Catatan">
+            <i class="bi bi-plus-lg text-primary fw-bold"></i>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-3" style="font-size: 0.85rem;">
+            <li><a class="dropdown-item py-2 fw-semibold text-success" href="#" data-bs-toggle="modal" data-bs-target="#modalAddReceivable"><i class="bi bi-arrow-down-left-circle-fill me-2"></i>Catat Piutang (Tagihan)</a></li>
+            <li><a class="dropdown-item py-2 fw-semibold text-danger" href="#" data-bs-toggle="modal" data-bs-target="#modalAddPayable"><i class="bi bi-arrow-up-right-circle-fill me-2"></i>Catat Hutang (Kewajiban)</a></li>
+        </ul>
+    </div>
+';
+
+require_once __DIR__ . '/layout/header.php';
 
 // Queries
 $activeTab = $_GET['tab'] ?? 'piutang';
