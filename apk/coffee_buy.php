@@ -606,7 +606,7 @@ $kpi = $db->query("
                     <!-- QR Code Validasi Resmi -->
                     <div class="py-3 text-center border-bottom border-dashed bg-light bg-opacity-50 rounded-3 my-2">
                         <div class="d-inline-block p-2 bg-white rounded-3 border shadow-sm mb-2" style="border-color: #e2e8f0 !important;">
-                            <div id="rc_qrcode" style="width: 90px; height: 90px; margin: 0 auto; display: flex; align-items: center; justify-content: center;"></div>
+                            <canvas id="rc_qrcode_canvas" width="100" height="100" style="width: 100px; height: 100px; display: block; margin: 0 auto;"></canvas>
                         </div>
                         <div class="fw-bold text-dark d-flex align-items-center justify-content-center gap-1" style="font-size: 0.72rem; letter-spacing: 0.3px;">
                             <i class="bi bi-qr-code-scan text-success"></i>
@@ -848,19 +848,20 @@ function populateReceiptCard(data) {
         notesContainer.style.display = 'none';
     }
 
-    // Render QR Code Validasi Resmi
-    const qrEl = document.getElementById('rc_qrcode');
-    if (qrEl) {
-        qrEl.innerHTML = '';
+    // Render QR Code Validasi Resmi (Canvas Engine)
+    const qrCanvas = document.getElementById('rc_qrcode_canvas');
+    if (qrCanvas) {
         const verifyUrl = getReceiptValidationUrl(data.invoice);
-        if (typeof QRCode !== 'undefined') {
-            new QRCode(qrEl, {
-                text: verifyUrl,
-                width: 90,
-                height: 90,
-                colorDark: '#064e3b',
-                colorLight: '#ffffff',
-                correctLevel: QRCode.CorrectLevel.M
+        if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+            QRCode.toCanvas(qrCanvas, verifyUrl, {
+                width: 100,
+                margin: 1,
+                color: {
+                    dark: '#064e3b',
+                    light: '#ffffff'
+                }
+            }, function (error) {
+                if (error) console.error('QR Render Error:', error);
             });
         }
     }
@@ -930,6 +931,9 @@ async function executeShareReceiptImage() {
     btn.disabled = true;
 
     try {
+        // Beri jeda 150ms agar canvas QR Code dan font selesai ter-render penuh di layar
+        await new Promise(r => setTimeout(r, 150));
+
         const receiptCard = document.getElementById('receiptCardToCapture');
         const canvas = await html2canvas(receiptCard, {
             scale: 2.5,
@@ -989,6 +993,7 @@ async function executeShareReceiptImage() {
 }
 
 async function downloadReceiptPngOnly() {
+    await new Promise(r => setTimeout(r, 150));
     const receiptCard = document.getElementById('receiptCardToCapture');
     const canvas = await html2canvas(receiptCard, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff' });
     const link = document.createElement('a');

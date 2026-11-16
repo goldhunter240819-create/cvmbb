@@ -14,6 +14,17 @@ Permission::require('finance.view');
 
 $db = Database::getInstance();
 
+// Auto Ensure Table Exists
+$db->exec("
+    CREATE TABLE IF NOT EXISTS `finance_categories` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `category_type` ENUM('IN', 'OUT') NOT NULL,
+        `name` VARCHAR(100) NOT NULL,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
 // -------------------------------------------------------------
 // POST HANDLER: TAMBAH & HAPUS KATEGORI KEUANGAN
 // -------------------------------------------------------------

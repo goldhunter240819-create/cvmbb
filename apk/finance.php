@@ -92,9 +92,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $accounts = $db->query("SELECT * FROM cash_accounts WHERE is_active = 1 ORDER BY id ASC")->fetchAll();
 $totalLiquid = array_sum(array_column($accounts, 'current_balance'));
 
-// Kategori Terpisah Berdasarkan Arah Kas
-$inCategories = $db->query("SELECT id, name FROM finance_categories WHERE category_type = 'IN' AND is_active = 1 ORDER BY name ASC")->fetchAll();
-$outCategories = $db->query("SELECT id, name FROM finance_categories WHERE category_type = 'OUT' AND is_active = 1 ORDER BY name ASC")->fetchAll();
+// Pastikan Tabel finance_categories Ada & Terisi Secara Otomatis & Aman
+$db->exec("
+    CREATE TABLE IF NOT EXISTS `finance_categories` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `category_type` ENUM('IN', 'OUT') NOT NULL,
+        `name` VARCHAR(100) NOT NULL,
+        `is_active` TINYINT(1) DEFAULT 1,
+        `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+");
+
+try {
+    $inCategories = $db->query("SELECT id, name FROM finance_categories WHERE category_type = 'IN' AND is_active = 1 ORDER BY name ASC")->fetchAll();
+    $outCategories = $db->query("SELECT id, name FROM finance_categories WHERE category_type = 'OUT' AND is_active = 1 ORDER BY name ASC")->fetchAll();
+
+    if (empty($inCategories) && empty($outCategories)) {
+        $defaultIn = [
+            'Penjualan Kopi Trading',
+            'Penjualan Kopi Bubuk',
+            'Fee Jasa Roasting',
+            'Fee Agen BRILink',
+            'Jasa Sewa Sound Sistem',
+            'Jasa Sewa Dekorasi',
+            'Pelunasan Piutang Usaha',
+            'Modal Masuk / Investasi',
+            'Pemasukan Lain-lain'
+        ];
+        $defaultOut = [
+            'Pembelian Kopi Petani',
+            'Operasional Kantor',
+            'Gaji & Upah Karyawan',
+            'BBM & Transportasi Pengiriman',
+            'Listrik, Air & Internet',
+            'Pembelian Karung & Kemasan',
+            'Konsumsi & Dapur Lapangan',
+            'Perawatan Mesin & Aset',
+            'Pembayaran Hutang Usaha',
+            'Pengeluaran Lain-lain'
+        ];
+
+        $insStmt = $db->prepare("INSERT INTO finance_categories (category_type, name) VALUES (?, ?)");
+        foreach ($defaultIn as $c) { $insStmt->execute(['IN', $c]); }
+        foreach ($defaultOut as $c) { $insStmt->execute(['OUT', $c]); }
+
+        $inCategories = $db->query("SELECT id, name FROM finance_categories WHERE category_type = 'IN' AND is_active = 1 ORDER BY name ASC")->fetchAll();
+        $outCategories = $db->query("SELECT id, name FROM finance_categories WHERE category_type = 'OUT' AND is_active = 1 ORDER BY name ASC")->fetchAll();
+    }
+} catch (Exception $e) {
+    $inCategories = [
+        ['id' => 1, 'name' => 'Penjualan Kopi Trading'],
+        ['id' => 2, 'name' => 'Fee Agen BRILink'],
+        ['id' => 3, 'name' => 'Fee Jasa Roasting'],
+        ['id' => 4, 'name' => 'Pemasukan Lain-lain']
+    ];
+    $outCategories = [
+        ['id' => 5, 'name' => 'Operasional Kantor'],
+        ['id' => 6, 'name' => 'BBM & Transportasi Pengiriman'],
+        ['id' => 7, 'name' => 'Gaji & Upah Karyawan'],
+        ['id' => 8, 'name' => 'Pengeluaran Lain-lain']
+    ];
+}
 
 $transactions = $db->query("
     SELECT t.*, a.account_name 

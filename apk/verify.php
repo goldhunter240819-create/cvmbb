@@ -5,7 +5,9 @@
  * Halaman Publik (Dapat diakses oleh siapa saja saat scan QR Code struk)
  */
 
-require_once __DIR__ . '/../includes/init.php';
+require_once __DIR__ . '/../core/Database.php';
+require_once __DIR__ . '/../helpers/utils.php';
+$db = Database::getInstance();
 
 $invoice = trim($_GET['inv'] ?? '');
 $trx = null;
