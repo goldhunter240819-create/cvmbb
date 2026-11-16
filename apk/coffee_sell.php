@@ -74,12 +74,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $stmt = $db->prepare("
                 INSERT INTO sales (
-                    invoice_number, sale_date, customer_id, total_weight_kg, subtotal, 
+                    invoice_number, sale_date, customer_id, total_weight_kg, capital_cost, total_amount, 
                     grand_total, paid_amount, profit_amount, payment_status, notes, created_by
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
-                $invoiceNumber, $saleDate, $customerId, $weightKg, $grandTotal,
+                $invoiceNumber, $saleDate, $customerId, $weightKg, $totalCost, $grandTotal,
                 $grandTotal, $paidAmount, $profitAmount, $paymentStatus, $notes, Auth::id()
             ]);
             $newSaleId = $db->lastInsertId();
@@ -110,10 +110,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($action === 'quick_add_customer') {
         csrf_validate();
         $name = sanitize($_POST['name'] ?? '');
-        $customerType = sanitize($_POST['customer_type'] ?? 'Eksportir');
+        $customerTypeInput = sanitize($_POST['customer_type'] ?? 'Eksportir');
         $phone = sanitize($_POST['phone'] ?? '');
         $address = sanitize($_POST['address'] ?? '');
         $notes = sanitize($_POST['notes'] ?? '');
+
+        $typeMap = [
+            'Eksportir' => 'CORPORATE',
+            'Pabrik'    => 'CORPORATE',
+            'Pengepul'  => 'WHOLESALER',
+            'Toko'      => 'CAFE',
+            'Umum'      => 'INDIVIDUAL'
+        ];
+        $customerType = $typeMap[$customerTypeInput] ?? 'WHOLESALER';
 
         if ($name) {
             $code = 'CUST-' . strtoupper(substr(uniqid(), -4));
