@@ -377,12 +377,12 @@ $payables = $db->query("SELECT * FROM payables ORDER BY status ASC, created_at D
                             ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
                         <i class="bi bi-whatsapp"></i> WA
                     </button>
-                    <form method="POST" action="" class="d-inline" onsubmit="return confirm('Hapus catatan piutang ini?')">
+                    <form method="POST" action="" class="d-inline">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete_record">
                         <input type="hidden" name="debt_type" value="receivable">
                         <input type="hidden" name="debt_id" value="<?= $r['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-1" style="width: 28px; height: 28px;" title="Hapus">
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-1 btn-confirm-delete" data-confirm="Hapus catatan piutang ini?" style="width: 28px; height: 28px;" title="Hapus">
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>
@@ -480,12 +480,12 @@ $payables = $db->query("SELECT * FROM payables ORDER BY status ASC, created_at D
                             ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
                         <i class="bi bi-whatsapp"></i> WA
                     </button>
-                    <form method="POST" action="" class="d-inline" onsubmit="return confirm('Hapus catatan hutang ini?')">
+                    <form method="POST" action="" class="d-inline">
                         <?= csrf_field() ?>
                         <input type="hidden" name="action" value="delete_record">
                         <input type="hidden" name="debt_type" value="payable">
                         <input type="hidden" name="debt_id" value="<?= $p['id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-1" style="width: 28px; height: 28px;" title="Hapus">
+                        <button type="button" class="btn btn-sm btn-outline-danger rounded-circle p-1 btn-confirm-delete" data-confirm="Hapus catatan hutang ini?" style="width: 28px; height: 28px;" title="Hapus">
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>

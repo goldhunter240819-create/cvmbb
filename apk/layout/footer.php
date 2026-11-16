@@ -43,6 +43,46 @@ $localIp = gethostbyname(gethostname());
 <!-- html2canvas for Generating Image Receipts ala GoPay / E-Wallet -->
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
+<style>
+/* Modern SweetAlert2 UI Styling ala Mobile iOS / E-Wallet */
+.swal2-popup {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    border-radius: 1.25rem !important;
+    padding: 1.5rem 1.25rem !important;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    border: 1px solid rgba(226, 232, 240, 0.8) !important;
+}
+.swal2-title {
+    font-size: 1.12rem !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    padding-top: 0.25rem !important;
+}
+.swal2-html-container {
+    font-size: 0.84rem !important;
+    color: #64748b !important;
+    margin-top: 0.4rem !important;
+    line-height: 1.4 !important;
+}
+.swal2-actions {
+    margin-top: 1.25rem !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+    justify-content: center !important;
+}
+.swal2-confirm, .swal2-cancel {
+    border-radius: 50rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    padding: 0.55rem 1.4rem !important;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+.swal2-icon {
+    transform: scale(0.85);
+    margin: 0.4rem auto 0.6rem !important;
+}
+</style>
+
 <script>
 // Global SweetAlert2 Anti-Shift (Mencegah Layar Bergeser/Melompat Saat Popup Terbuka)
 if (typeof Swal !== 'undefined') {
@@ -51,8 +91,26 @@ if (typeof Swal !== 'undefined') {
         if (typeof args[0] === 'object' && args[0] !== null) {
             args[0].scrollbarPadding = false;
             args[0].heightAuto = false;
+            if (!args[0].customClass) {
+                args[0].customClass = {
+                    popup: 'rounded-4 shadow-lg border-0'
+                };
+            }
         }
         return _origFire.apply(this, args);
+    };
+
+    // Override alert bawaan browser agar otomatis tampil sebagai SweetAlert2 keren & modern
+    const _origAlert = window.alert;
+    window.alert = function (message) {
+        Swal.fire({
+            title: 'Perhatian',
+            text: message,
+            icon: 'warning',
+            confirmButtonText: 'Oke, Mengerti',
+            confirmButtonColor: '#059669',
+            buttonsStyling: true
+        });
     };
 }
 

@@ -288,11 +288,11 @@ $transactions = $db->query("
                             <?php foreach ($outCategories as $oc): ?>
                                 <div class="d-flex justify-content-between align-items-center p-2 rounded-2 bg-white border">
                                     <span class="small fw-semibold text-dark"><?= e($oc['name']) ?></span>
-                                    <form method="POST" action="" onsubmit="return confirm('Hapus kategori <?= e(addslashes($oc['name'])) ?>?')">
+                                    <form method="POST" action="">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="action" value="delete_category">
                                         <input type="hidden" name="category_id" value="<?= $oc['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger p-0 px-1 border-0" title="Hapus Kategori">
+                                        <button type="button" class="btn btn-sm btn-outline-danger p-0 px-1 border-0 btn-confirm-delete" data-confirm="Hapus kategori '<?= e(addslashes($oc['name'])) ?>'?" title="Hapus Kategori">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -307,11 +307,11 @@ $transactions = $db->query("
                             <?php foreach ($inCategories as $ic): ?>
                                 <div class="d-flex justify-content-between align-items-center p-2 rounded-2 bg-white border">
                                     <span class="small fw-semibold text-dark"><?= e($ic['name']) ?></span>
-                                    <form method="POST" action="" onsubmit="return confirm('Hapus kategori <?= e(addslashes($ic['name'])) ?>?')">
+                                    <form method="POST" action="">
                                         <?= csrf_field() ?>
                                         <input type="hidden" name="action" value="delete_category">
                                         <input type="hidden" name="category_id" value="<?= $ic['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger p-0 px-1 border-0" title="Hapus Kategori">
+                                        <button type="button" class="btn btn-sm btn-outline-danger p-0 px-1 border-0 btn-confirm-delete" data-confirm="Hapus kategori '<?= e(addslashes($ic['name'])) ?>'?" title="Hapus Kategori">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

@@ -838,8 +838,15 @@ function confirmAndSendSellWa() {
     const phoneInput = document.getElementById('wa_prompt_cust_phone_input');
     const phoneVal = (phoneInput.value || '').trim();
     if (!phoneVal) {
-        alert('Silakan masukkan nomor WhatsApp pembeli.');
-        phoneInput.focus();
+        Swal.fire({
+            title: 'Nomor WA Kosong',
+            text: 'Silakan ketik nomor WhatsApp pembeli terlebih dahulu untuk mengirimkan faktur.',
+            icon: 'warning',
+            confirmButtonText: 'Siap, Ketik Nomor',
+            confirmButtonColor: '#1a56db'
+        }).then(() => {
+            phoneInput.focus();
+        });
         return;
     }
 
@@ -916,10 +923,17 @@ async function executeShareSellReceiptImage() {
 
     } catch (err) {
         console.error('Error html2canvas:', err);
-        alert('Gagal membuat gambar faktur. Mengalihkan ke teks...');
-        sendSellWaTextDirectOnly();
         btn.innerHTML = originalText;
         btn.disabled = false;
+        Swal.fire({
+            title: 'Gagal Membuat Gambar',
+            text: 'Terjadi kendala saat generate gambar faktur. Mengalihkan ke teks WA biasa...',
+            icon: 'info',
+            confirmButtonColor: '#1a56db',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        sendSellWaTextDirectOnly();
     }
 }
 

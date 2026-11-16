@@ -844,8 +844,15 @@ function confirmAndSendWa() {
     const phoneInput = document.getElementById('wa_prompt_phone_input');
     const phoneVal = (phoneInput.value || '').trim();
     if (!phoneVal) {
-        alert('Silakan masukkan nomor WhatsApp mitra petani.');
-        phoneInput.focus();
+        Swal.fire({
+            title: 'Nomor WA Kosong',
+            text: 'Silakan ketik nomor WhatsApp mitra petani terlebih dahulu untuk mengirimkan struk.',
+            icon: 'warning',
+            confirmButtonText: 'Siap, Ketik Nomor',
+            confirmButtonColor: '#059669'
+        }).then(() => {
+            phoneInput.focus();
+        });
         return;
     }
 
@@ -925,7 +932,15 @@ async function executeShareReceiptImage() {
         console.error(err);
         btn.innerHTML = originalText;
         btn.disabled = false;
-        alert('Gagal membuat gambar struk: ' + err.message);
+        Swal.fire({
+            title: 'Gagal Membuat Gambar',
+            text: 'Terjadi kendala saat generate gambar struk. Mengalihkan ke teks WA biasa...',
+            icon: 'info',
+            confirmButtonColor: '#059669',
+            timer: 2000,
+            showConfirmButton: false
+        });
+        sendWaTextDirectOnly();
     }
 }
 
