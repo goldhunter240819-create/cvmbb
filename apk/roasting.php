@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
         $cStmt->execute([$customerName]);
         $customerId = $cStmt->fetchColumn();
         if (!$customerId) {
+            $db->prepare("INSERT INTO customers (customer_code, name, phone) VALUES (?, ?, ?)")->execute(['CUST-' . strtoupper(substr(uniqid(), -4)), $customerName, $phone]);
             $db->prepare("INSERT INTO customers (code, name, phone) VALUES (?, ?, ?)")->execute(['CUST-' . strtoupper(substr(uniqid(), -4)), $customerName, $phone]);
             $customerId = $db->lastInsertId();
         }
@@ -47,10 +48,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'creat
             INSERT INTO roasting_orders (
                 order_number, order_date, customer_id, raw_weight_kg, roast_profile,
                 fee_per_kg, total_fee, work_status, payment_status, notes, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'ANTREAN', 'LUNAS', ?, ?)
             ) VALUES (?, ?, ?, ?, ?, ?, ?, 'ANTREAN', ?, ?, ?)
         ");
         $stmt->execute([
             $orderNumber, $orderDate, $customerId, $weight, $profile,
+            $feePerKg, $totalFee, $notes, Auth::id()
             $feePerKg, $totalFee, $paymentStatus, $notes, Auth::id()
         ]);
 
@@ -189,6 +192,9 @@ $kpi = $db->query("
                         </select>
                     </div>
                 </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold mb-1">Ongkos Sangrai per Kg (Rp)</label>
+                    <input type="number" name="fee_per_kg" id="r_fee" class="form-control form-control-sm" value="15000" required>
                 <div class="row g-2 mb-2">
                     <div class="col-6">
                         <label class="form-label small fw-bold mb-1">Ongkos per Kg (Rp)</label>

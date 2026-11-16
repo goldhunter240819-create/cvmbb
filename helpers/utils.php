@@ -35,6 +35,19 @@ function e($value) {
 }
 
 /**
+ * Sanitasi input data (string / array)
+ */
+function sanitize($data) {
+    if (is_array($data)) {
+        foreach ($data as $key => $value) {
+            $data[$key] = sanitize($value);
+        }
+        return $data;
+    }
+    return htmlspecialchars(trim((string)($data ?? '')), ENT_QUOTES, 'UTF-8');
+}
+
+/**
  * Format angka ke format mata uang Rupiah (IDR)
  */
 function format_rupiah($amount, $withPrefix = true) {

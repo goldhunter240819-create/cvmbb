@@ -14,6 +14,10 @@ require_once __DIR__ . '/layout/header.php';
 $stmtCash = $db->query("SELECT COALESCE(SUM(current_balance), 0) FROM cash_accounts WHERE is_active = 1");
 $totalCash = (float)$stmtCash->fetchColumn();
 
+// Metrik Hutang & Piutang
+$quickPiu = (float)$db->query("SELECT COALESCE(SUM(remaining_amount), 0) FROM receivables WHERE status != 'LUNAS'")->fetchColumn();
+$quickHut = (float)$db->query("SELECT COALESCE(SUM(remaining_amount), 0) FROM payables WHERE status != 'LUNAS'")->fetchColumn();
+
 // Transaksi Terkini
 $recentSales = $db->query("
     SELECT 'COFFEE' as type, invoice_number as code, sale_date as tdate, grand_total as amount, 'Penjualan Kopi' as descr 
@@ -202,7 +206,29 @@ $recentFeed = array_slice($feed, 0, 4);
             Buku Kas &raquo;
         </a>
     </div>
-    <h4 class="fw-bold text-primary mb-3"><?= format_rupiah($totalCash) ?></h4>
+    <h4 class="fw-bold text-primary mb-2"><?= format_rupiah($totalCash) ?></h4>
+
+    <!-- Ringkasan Hutang & Piutang Cepat -->
+    <div class="row g-2 mb-3">
+        <div class="col-6">
+            <a href="<?= base_url('apk/debts.php?tab=piutang') ?>" class="d-block p-2 rounded-3 text-decoration-none bg-primary-subtle border border-primary border-opacity-25" style="font-size: 0.72rem;">
+                <div class="text-muted d-flex justify-content-between align-items-center">
+                    <span>Piutang (Tagihan)</span>
+                    <i class="bi bi-arrow-down-left text-primary"></i>
+                </div>
+                <strong class="text-primary fs-6"><?= format_rupiah($quickPiu) ?></strong>
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="<?= base_url('apk/debts.php?tab=hutang') ?>" class="d-block p-2 rounded-3 text-decoration-none bg-danger-subtle border border-danger border-opacity-25" style="font-size: 0.72rem;">
+                <div class="text-muted d-flex justify-content-between align-items-center">
+                    <span>Hutang Usaha</span>
+                    <i class="bi bi-arrow-up-right text-danger"></i>
+                </div>
+                <strong class="text-danger fs-6"><?= format_rupiah($quickHut) ?></strong>
+            </a>
+        </div>
+    </div>
 
     <div class="d-flex justify-content-around border-top pt-3">
         <a href="<?= base_url('apk/finance.php') ?>" class="wallet-action-btn">
@@ -244,7 +270,7 @@ $recentFeed = array_slice($feed, 0, 4);
 <!-- MENU GRID LAYANAN (ALA MTSRs, AULA CELL, MIDMIFHDA) -->
 <div class="section-title">
     <span>Layanan & Lini Usaha</span>
-    <span class="text-muted small" style="font-size: 0.7rem;">12 Fitur MBB</span>
+    <span class="text-muted small" style="font-size: 0.7rem;">Operasional MBB</span>
 </div>
 
 <div class="menu-grid">
@@ -264,7 +290,15 @@ $recentFeed = array_slice($feed, 0, 4);
         <span class="grid-label">Jual Kopi</span>
     </a>
 
-    <!-- 3. Buku Pelanggan & Mitra -->
+    <!-- 3. Buku Hutang & Piutang -->
+    <a href="<?= base_url('apk/debts.php') ?>" class="grid-item">
+        <div class="grid-icon-box" style="background: #fef3c7; color: #b45309;">
+            <i class="bi bi-journal-bookmark-fill"></i>
+        </div>
+        <span class="grid-label">Hutang Piutang</span>
+    </a>
+
+    <!-- 4. Buku Pelanggan & Mitra -->
     <a href="<?= base_url('apk/customers.php') ?>" class="grid-item">
         <div class="grid-icon-box" style="background: #e0e7ff; color: #4338ca;">
             <i class="bi bi-person-lines-fill"></i>

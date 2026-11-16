@@ -62,9 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($paymentStatus === 'BELUM_BAYAR') {
                 $db->prepare("
-                    INSERT INTO receivables (reference_number, business_line, debtor_name, total_amount, paid_amount, remaining_amount, status, notes)
-                    VALUES (?, 'Kopi Trading', ?, ?, 0, ?, 'BELUM_LUNAS', ?)
-                ")->execute([$invoiceNumber, $customerName, $grandTotal, $grandTotal, $notes]);
+                    INSERT INTO receivables (reference_number, business_line, debtor_name, total_amount, paid_amount, status, notes)
+                    VALUES (?, 'Kopi Trading', ?, ?, 0, 'BELUM_LUNAS', ?)
+                ")->execute([$invoiceNumber, $customerName, $grandTotal, $notes]);
             }
 
             log_audit('CREATE_COFFEE_SALE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat penjualan {$invoiceNumber} ke {$customerName}");
@@ -228,6 +228,7 @@ $kpi = $db->query("
                     </div>
                     <div class="col-6">
                         <label class="form-label small fw-bold mb-1">Status Pembayaran</label>
+                        <input type="text" class="form-control form-control-sm bg-light text-success fw-bold" readonly value="LUNAS / CASH">
                         <select name="payment_status" class="form-select form-select-sm fw-bold text-success">
                             <option value="LUNAS" selected>Lunas / Cash</option>
                             <option value="BELUM_BAYAR">Tempo / Hutang</option>
