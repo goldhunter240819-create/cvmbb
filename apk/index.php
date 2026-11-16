@@ -79,7 +79,7 @@ $recentBri = $db->query("
         b.created_at,
         b.nominal_amount as amount,
         CONCAT('BRILink - ', b.trx_type) as descr,
-        COALESCE(b.customer_name, b.payment_channel) as sub_descr,
+        COALESCE(b.customer_name, b.trx_type) as sub_descr,
         b.status,
         'NEUTRAL' as flow
     FROM brilink_transactions b
@@ -94,11 +94,12 @@ $recentRoast = $db->query("
         r.order_date as tdate,
         r.created_at,
         r.total_fee as amount,
-        CONCAT('Roasting - ', COALESCE(r.customer_name, 'Pelanggan')) as descr,
-        CONCAT(FORMAT(r.green_bean_weight_kg, 1), ' Kg') as sub_descr,
+        CONCAT('Roasting - ', COALESCE(c.name, 'Pelanggan')) as descr,
+        CONCAT(FORMAT(r.raw_weight_kg, 1), ' Kg Raw') as sub_descr,
         r.payment_status as status,
         'IN' as flow
     FROM roasting_orders r
+    LEFT JOIN customers c ON r.customer_id = c.id
     ORDER BY r.id DESC LIMIT 30
 ")->fetchAll();
 
