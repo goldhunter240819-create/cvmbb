@@ -1,6 +1,6 @@
 <?php
 /**
- * MBB MOBILE APK - Penjualan Kopi (Trading)
+ * MBB MOBILE APK - Penjualan Kopi Trading
  * CV. MAJU BERKAH BERSAMA
  */
 
@@ -15,7 +15,7 @@ $mobileHeaderAction = '
 
 require_once __DIR__ . '/layout/header.php';
 
-// Handle Form Penjualan Kopi
+// Form Handler
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -38,12 +38,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!in_array($paymentStatus, ['LUNAS', 'BELUM_BAYAR', 'SEBAGIAN'])) {
             $paymentStatus = 'LUNAS';
         }
-        $paidAmount = ($paymentStatus === 'LUNAS') ? $grandTotal : 0;
+
+        if ($paymentStatus === 'LUNAS') {
+            $paidAmount = $grandTotal;
+            $remaining = 0;
+        } elseif ($paymentStatus === 'SEBAGIAN') {
+            $inputPaid = (float)str_replace(['.', ','], ['', '.'], $_POST['paid_amount'] ?? '0');
+            if ($inputPaid >= $grandTotal) {
+                $paymentStatus = 'LUNAS';
+                $paidAmount = $grandTotal;
+                $remaining = 0;
+            } elseif ($inputPaid <= 0) {
+                $paymentStatus = 'BELUM_BAYAR';
+                $paidAmount = 0;
+                $remaining = $grandTotal;
+            } else {
+                $paidAmount = $inputPaid;
+                $remaining = max(0, $grandTotal - $paidAmount);
+            }
+        } else {
+            // BELUM_BAYAR
+            $paidAmount = 0;
+            $remaining = $grandTotal;
+        }
 
         if ($weightKg > 0 && $pricePerKg > 0) {
-            $cStmt = $db->prepare("SELECT id FROM customers WHERE name = ? LIMIT 1");
+            $cStmt = $db->prepare("SELECT id, phone FROM customers WHERE name = ? LIMIT 1");
             $cStmt->execute([$customerName]);
-            $customerId = $cStmt->fetchColumn();
+            $cRow = $cStmt->fetch();
+            $customerId = $cRow['id'] ?? null;
+            $customerPhone = $cRow['phone'] ?? null;
+
             if (!$customerId) {
                 $db->prepare("INSERT INTO customers (code, name) VALUES (?, ?)")->execute(['CUST-' . strtoupper(substr(uniqid(), -4)), $customerName]);
                 $customerId = $db->lastInsertId();
@@ -59,18 +84,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $invoiceNumber, $saleDate, $customerId, $weightKg, $grandTotal,
                 $grandTotal, $paidAmount, $profitAmount, $paymentStatus, $notes, Auth::id()
             ]);
+            $newSaleId = $db->lastInsertId();
 
-            if ($paymentStatus === 'BELUM_BAYAR') {
+            if ($remaining > 0) {
+                $recStatus = ($paidAmount > 0) ? 'SEBAGIAN' : 'BELUM_LUNAS';
                 $db->prepare("
-                    INSERT INTO receivables (reference_number, business_line, debtor_name, total_amount, paid_amount, status, notes)
-                    VALUES (?, 'Kopi Trading', ?, ?, 0, 'BELUM_LUNAS', ?)
-                ")->execute([$invoiceNumber, $customerName, $grandTotal, $notes]);
+                    INSERT INTO receivables (reference_number, business_line, debtor_name, debtor_phone, total_amount, paid_amount, status, notes)
+                    VALUES (?, 'Kopi Trading', ?, ?, ?, ?, ?, ?)
+                ")->execute([$invoiceNumber, $customerName, $customerPhone, $grandTotal, $paidAmount, $recStatus, $notes]);
             }
 
-            log_audit('CREATE_COFFEE_SALE_APK', 'apk', $db->lastInsertId(), "Mobile APK mencatat penjualan {$invoiceNumber} ke {$customerName}");
+            log_audit('CREATE_COFFEE_SALE_APK', 'apk', $newSaleId, "Mobile APK mencatat penjualan {$invoiceNumber} ke {$customerName} ({$paymentStatus})");
             flash_set('success', "Penjualan {$invoiceNumber} berhasil dicatat!");
             redirect('apk/coffee_sell.php');
         }
+    } elseif ($action === 'update_customer_phone') {
+        header('Content-Type: application/json');
+        $customerId = (int)($_POST['customer_id'] ?? 0);
+        $phone = sanitize($_POST['phone'] ?? '');
+        if ($customerId > 0 && !empty($phone)) {
+            $db->prepare("UPDATE customers SET phone = ? WHERE id = ?")->execute([$phone, $customerId]);
+            echo json_encode(['success' => true]);
+        } else {
+            echo json_encode(['success' => false]);
+        }
+        exit;
     } elseif ($action === 'quick_add_customer') {
         csrf_validate();
         $name = sanitize($_POST['name'] ?? '');
@@ -94,7 +132,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $customersList = $db->query("SELECT id, code, name, customer_type, phone, address FROM customers ORDER BY name ASC")->fetchAll();
 
 $sales = $db->query("
-    SELECT s.*, c.name AS customer_name 
+    SELECT s.*, c.name AS customer_name, c.phone AS customer_phone, c.id AS customer_id 
     FROM sales s 
     LEFT JOIN customers c ON s.customer_id = c.id 
     ORDER BY s.sale_date DESC, s.id DESC 
@@ -144,7 +182,13 @@ $kpi = $db->query("
     </div>
 <?php else: ?>
     <?php foreach ($sales as $s): ?>
-        <div class="mobile-card">
+        <?php
+        $payStatus = $s['payment_status'] ?? 'LUNAS';
+        $grandTotal = (float)($s['grand_total'] ?? 0);
+        $paidAmount = (float)($s['paid_amount'] ?? 0);
+        $remaining  = max(0, $grandTotal - $paidAmount);
+        ?>
+        <div class="mobile-card mb-2">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <div class="d-flex align-items-center gap-2">
                     <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 38px; height: 38px; font-size: 1rem; flex-shrink: 0;">
@@ -159,7 +203,21 @@ $kpi = $db->query("
                         </div>
                     </div>
                 </div>
-                <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.68rem;">LUNAS</span>
+
+                <!-- Status Badge -->
+                <?php if ($payStatus === 'LUNAS'): ?>
+                    <span class="badge bg-success-subtle text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.68rem;">
+                        <i class="bi bi-check-circle-fill me-1"></i>Lunas
+                    </span>
+                <?php elseif ($payStatus === 'SEBAGIAN'): ?>
+                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25 px-2 py-1" style="font-size: 0.68rem;">
+                        <i class="bi bi-pie-chart-fill me-1"></i>DP (Sebagian)
+                    </span>
+                <?php else: ?>
+                    <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25 px-2 py-1" style="font-size: 0.68rem;">
+                        <i class="bi bi-clock-history me-1"></i>Tempo / Piutang
+                    </span>
+                <?php endif; ?>
             </div>
             
             <div class="d-flex justify-content-between align-items-center pt-2 border-top" style="font-size: 0.8rem;">
@@ -171,6 +229,45 @@ $kpi = $db->query("
                     <div class="fw-bold text-primary fs-6"><?= format_rupiah($s['grand_total']) ?></div>
                     <div class="text-success small fw-semibold">Laba: +<?= format_rupiah($s['profit_amount']) ?></div>
                 </div>
+            </div>
+
+            <?php if ($payStatus === 'SEBAGIAN'): ?>
+                <div class="mt-2 p-2 rounded-3 bg-warning-subtle border border-warning border-opacity-25" style="font-size: 0.76rem;">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span class="text-muted"><i class="bi bi-cash-stack text-success me-1"></i>DP Diterima:</span>
+                        <strong class="text-success fw-bold"><?= format_rupiah($paidAmount) ?></strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-danger fw-semibold"><i class="bi bi-exclamation-circle-fill me-1"></i>Sisa Piutang:</span>
+                        <strong class="text-danger fw-bold fs-6"><?= format_rupiah($remaining) ?></strong>
+                    </div>
+                </div>
+            <?php elseif ($payStatus === 'BELUM_BAYAR'): ?>
+                <div class="mt-2 p-2 rounded-3 bg-danger-subtle border border-danger border-opacity-25 d-flex justify-content-between align-items-center" style="font-size: 0.76rem;">
+                    <span class="text-danger fw-semibold"><i class="bi bi-clock-history me-1"></i>Piutang Belum Dibayar:</span>
+                    <strong class="text-danger fw-bold fs-6"><?= format_rupiah($grandTotal) ?></strong>
+                </div>
+            <?php endif; ?>
+
+            <!-- Tombol Kirim Faktur WA -->
+            <div class="pt-2 mt-2 border-top">
+                <button type="button" class="btn btn-sm btn-outline-success rounded-pill w-100 fw-semibold d-flex align-items-center justify-content-center gap-2 py-1" 
+                        onclick='prepareSellWaInvoice(<?= json_encode([
+                            "id"             => (int)$s["id"],
+                            "customer_id"    => (int)($s["customer_id"] ?? 0),
+                            "customer_name"  => $s["customer_name"] ?? "Pembeli",
+                            "customer_phone" => $s["customer_phone"] ?? "",
+                            "invoice"        => $s["invoice_number"],
+                            "date"           => date("d/m/Y", strtotime($s["sale_date"])),
+                            "weight"         => (float)$s["total_weight_kg"],
+                            "total"          => (float)$s["grand_total"],
+                            "paid"           => (float)$s["paid_amount"],
+                            "status"         => $payStatus,
+                            "notes"          => $s["notes"] ?? ""
+                        ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
+                    <i class="bi bi-whatsapp fs-6"></i>
+                    <span style="font-size: 0.78rem;">Kirim Faktur WA</span>
+                </button>
             </div>
         </div>
     <?php endforeach; ?>
@@ -228,14 +325,41 @@ $kpi = $db->query("
                     </div>
                     <div class="col-6">
                         <label class="form-label small fw-bold mb-1">Status Pembayaran</label>
-                        <input type="text" class="form-control form-control-sm bg-light text-success fw-bold" readonly value="LUNAS / CASH">
-                        <select name="payment_status" class="form-select form-select-sm fw-bold text-success">
-                            <option value="LUNAS" selected>Lunas / Cash</option>
-                            <option value="BELUM_BAYAR">Tempo / Hutang</option>
-                            <option value="SEBAGIAN">DP / Sebagian</option>
+                        <select name="payment_status" id="s_payment_status" class="form-select form-select-sm fw-bold text-success" onchange="toggleSellPaymentFields()">
+                            <option value="LUNAS" selected>Lunas / Cash (Tunai)</option>
+                            <option value="SEBAGIAN">DP / Panjar (Sebagian)</option>
+                            <option value="BELUM_BAYAR">Tempo / Piutang</option>
                         </select>
                     </div>
                 </div>
+
+                <!-- CONTAINER INPUT DP (Jika Pembayaran Sebagian / DP) -->
+                <div id="box_sell_dp_payment" class="p-3 mb-2 rounded-3 border border-warning bg-warning bg-opacity-10" style="display: none;">
+                    <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom border-warning border-opacity-25">
+                        <span class="small fw-bold text-dark"><i class="bi bi-cash-coin text-warning me-1"></i>Rincian Uang Muka (DP)</span>
+                        <span class="badge bg-warning text-dark fw-bold" style="font-size: 0.68rem;">Pembayaran DP</span>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold mb-1 text-dark" style="font-size: 0.78rem;">
+                            Nominal DP yang Diterima (Rp) <span class="text-danger">*</span>
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white fw-bold text-muted">Rp</span>
+                            <input type="number" name="paid_amount" id="s_paid_amount" class="form-control form-control-sm fw-bold text-success fs-6" placeholder="0" min="0" oninput="recalcSellPayment()">
+                        </div>
+                        <div class="form-text small" style="font-size: 0.7rem;">Ketik jumlah uang muka/DP yang sudah ditransfer/diterima dari pembeli.</div>
+                    </div>
+                    <div class="p-2 bg-white rounded-2 border d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="text-muted d-block" style="font-size: 0.7rem;">Sisa Piutang yang Harus Ditagih:</span>
+                            <strong class="text-danger fs-6" id="s_remaining_disp">Rp 0</strong>
+                        </div>
+                        <span class="badge bg-danger-subtle text-danger border border-danger border-opacity-25" style="font-size: 0.68rem;">
+                            Otomatis Masuk Piutang
+                        </span>
+                    </div>
+                </div>
+
                 <div class="p-2 bg-light rounded-3 mb-2 text-center">
                     <span class="text-muted small d-block">Estimasi Nilai Kontrak Penjualan:</span>
                     <h5 class="fw-bold text-primary mb-0" id="s_total">Rp 0</h5>
@@ -352,7 +476,7 @@ $kpi = $db->query("
                                     </div>
                                 </div>
                                 <span class="badge bg-primary-subtle text-primary border border-primary border-opacity-25" style="font-size: 0.65rem;">
-                                    Tarik &raquo;
+                                    Pilih &raquo;
                                 </span>
                             </div>
                         <?php endforeach; ?>
@@ -363,9 +487,53 @@ $kpi = $db->query("
     </div>
 </div>
 
+<!-- MODAL INPUT NOMOR WA PELANGGAN -->
+<div class="modal fade" id="modalInputSellWaPhone" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-whatsapp me-2"></i>Kirim Faktur WhatsApp</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <p class="small text-muted mb-3">
+                    Nomor WhatsApp pembeli <strong id="wa_prompt_cust_name" class="text-dark">Pelanggan</strong> belum tersimpan di kontak. Masukkan nomor WhatsApp untuk mengirimkan faktur:
+                </p>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold mb-1">Nomor WhatsApp Pembeli</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light text-muted"><i class="bi bi-whatsapp text-success"></i></span>
+                        <input type="tel" id="wa_prompt_cust_phone_input" class="form-control" placeholder="Contoh: 08123456789 atau 628..." autocomplete="tel">
+                    </div>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="wa_prompt_cust_save" checked>
+                    <label class="form-check-label small" for="wa_prompt_cust_save">
+                        Simpan nomor ini ke data kontak pelanggan
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-3 px-3">
+                <div class="row g-2 w-100">
+                    <div class="col-4">
+                        <button type="button" class="btn btn-sm btn-light w-100 text-muted fw-semibold py-2" data-bs-dismiss="modal">Batal</button>
+                    </div>
+                    <div class="col-8">
+                        <button type="button" class="btn btn-sm btn-primary w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-1" onclick="confirmAndSendSellWa()">
+                            <i class="bi bi-send-fill me-1"></i>Kirim Faktur Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 let addSaleModalInstance = null;
 let pickCustomerModalInstance = null;
+let inputSellWaModalInstance = null;
+let currentSellWaData = null;
 
 function getSaleModal() {
     if (!addSaleModalInstance) {
@@ -379,6 +547,13 @@ function getCustomerPickModal() {
         pickCustomerModalInstance = new bootstrap.Modal(document.getElementById('modalPickCustomer'));
     }
     return pickCustomerModalInstance;
+}
+
+function getInputSellWaModal() {
+    if (!inputSellWaModalInstance) {
+        inputSellWaModalInstance = new bootstrap.Modal(document.getElementById('modalInputSellWaPhone'));
+    }
+    return inputSellWaModalInstance;
 }
 
 function openCustomerPicker() {
@@ -415,6 +590,126 @@ function hideAddCustomerForm() {
     document.getElementById('quickAddCustomerBox').style.display = 'none';
 }
 
+function toggleSellPaymentFields() {
+    const sel = document.getElementById('s_payment_status');
+    const box = document.getElementById('box_sell_dp_payment');
+    if (sel && box) {
+        if (sel.value === 'SEBAGIAN') {
+            box.style.display = 'block';
+            recalcSellPayment();
+            setTimeout(() => {
+                document.getElementById('s_paid_amount')?.focus();
+            }, 100);
+        } else {
+            box.style.display = 'none';
+        }
+    }
+}
+
+function recalcSellPayment() {
+    const weight = parseFloat(document.getElementById('s_weight')?.value) || 0;
+    const price  = parseFloat(document.getElementById('s_price')?.value) || 0;
+    const total  = weight * price;
+
+    const paidInput = document.getElementById('s_paid_amount');
+    const paid = parseFloat(paidInput?.value) || 0;
+    const remaining = Math.max(0, total - paid);
+
+    const remDisp = document.getElementById('s_remaining_disp');
+    if (remDisp) {
+        remDisp.textContent = 'Rp ' + remaining.toLocaleString('id-ID');
+    }
+}
+
+function cleanPhoneForWa(phone) {
+    if (!phone) return '';
+    let cleaned = phone.replace(/[^0-9]/g, '');
+    if (cleaned.startsWith('0')) {
+        cleaned = '62' + cleaned.substring(1);
+    } else if (cleaned.startsWith('8')) {
+        cleaned = '62' + cleaned;
+    }
+    return cleaned;
+}
+
+function buildSellWaInvoiceText(data) {
+    const formatRp = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+    const weightKg = Number(data.weight || 0).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 2});
+
+    let statusText = 'LUNAS (CASH/TRANSFER)';
+    let paymentDetail = '';
+    if (data.status === 'SEBAGIAN') {
+        const remaining = Math.max(0, Number(data.total || 0) - Number(data.paid || 0));
+        statusText = 'DP / SEBAGIAN';
+        paymentDetail = `\n💵 *DP Diterima   : ${formatRp(data.paid)}*\n⏳ *Sisa Tagihan  : ${formatRp(remaining)}*`;
+    } else if (data.status === 'BELUM_BAYAR') {
+        statusText = 'TEMPO / PIUTANG';
+    }
+
+    let noteText = data.notes ? `\n📝 *Catatan :* ${data.notes}` : '';
+
+    return `📑 *FAKTUR PENJUALAN KOPI*\n*CV. MAJU BERKAH BERSAMA*\n━━━━━━━━━━━━━━━━━━━\n` +
+           `No. Faktur : *${data.invoice}*\n` +
+           `Tanggal    : ${data.date}\n` +
+           `Pembeli    : *${data.customer_name}*\n` +
+           `━━━━━━━━━━━━━━━━━━━\n` +
+           `• Total Volume : *${weightKg} Kg*\n` +
+           `━━━━━━━━━━━━━━━━━━━\n` +
+           `💰 *TOTAL NILAI : ${formatRp(data.total)}*\n` +
+           `💳 *STATUS      : ${statusText}*` +
+           paymentDetail +
+           noteText +
+           `\n━━━━━━━━━━━━━━━━━━━\n` +
+           `_Faktur digital resmi diterbitkan oleh MBB Field System._\n_Terima kasih atas kerja samanya._`;
+}
+
+function prepareSellWaInvoice(data) {
+    currentSellWaData = data;
+    const phone = (data.customer_phone || '').trim();
+    if (phone) {
+        const text = buildSellWaInvoiceText(data);
+        const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhoneForWa(phone)}&text=${encodeURIComponent(text)}`;
+        window.open(waUrl, '_blank');
+    } else {
+        document.getElementById('wa_prompt_cust_name').textContent = data.customer_name || 'Pembeli';
+        document.getElementById('wa_prompt_cust_phone_input').value = '';
+        getInputSellWaModal().show();
+        setTimeout(() => {
+            document.getElementById('wa_prompt_cust_phone_input')?.focus();
+        }, 300);
+    }
+}
+
+function confirmAndSendSellWa() {
+    if (!currentSellWaData) return;
+    const phoneInput = document.getElementById('wa_prompt_cust_phone_input');
+    const phoneVal = (phoneInput.value || '').trim();
+    if (!phoneVal) {
+        alert('Silakan masukkan nomor WhatsApp pembeli.');
+        phoneInput.focus();
+        return;
+    }
+
+    const shouldSave = document.getElementById('wa_prompt_cust_save').checked;
+    if (shouldSave && currentSellWaData.customer_id) {
+        const fd = new FormData();
+        fd.append('action', 'update_customer_phone');
+        fd.append('customer_id', currentSellWaData.customer_id);
+        fd.append('phone', phoneVal);
+
+        fetch(window.location.href, {
+            method: 'POST',
+            body: fd
+        }).then(r => r.json()).catch(() => {});
+    }
+
+    currentSellWaData.customer_phone = phoneVal;
+    const text = buildSellWaInvoiceText(currentSellWaData);
+    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhoneForWa(phoneVal)}&text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
+    getInputSellWaModal().hide();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     const w = document.getElementById('s_weight');
     const p = document.getElementById('s_price');
@@ -425,11 +720,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const price  = parseFloat(p.value) || 0;
         const total  = weight * price;
         totEl.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        recalcSellPayment();
     }
 
     if (w && p) {
         w.addEventListener('input', recalc);
         p.addEventListener('input', recalc);
+    }
+
+    const payStatusSel = document.getElementById('s_payment_status');
+    if (payStatusSel) {
+        payStatusSel.addEventListener('change', toggleSellPaymentFields);
+    }
+    const saleModalEl = document.getElementById('modalAddSale');
+    if (saleModalEl) {
+        saleModalEl.addEventListener('shown.bs.modal', function() {
+            toggleSellPaymentFields();
+        });
     }
 
     // Live search filter

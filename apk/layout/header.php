@@ -9,6 +9,11 @@ require_once __DIR__ . '/../../core/Permission.php';
 require_once __DIR__ . '/../../core/Database.php';
 require_once __DIR__ . '/../../helpers/utils.php';
 
+// Mencegah Browser Menyimpan Cache HTML Halaman Mobile
+header("Cache-Control: no-store, no-cache, must-revalidate, max-age=0");
+header("Cache-Control: post-check=0, pre-check=0", false);
+header("Pragma: no-cache");
+
 Auth::requireLogin('apk/login.php');
 $user = Auth::user();
 $db = Database::getInstance();
