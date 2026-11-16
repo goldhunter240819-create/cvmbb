@@ -44,10 +44,10 @@ $localIp = gethostbyname(gethostname());
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 
 <!-- QRCode Generator for Digital Receipt Validation (Canvas Engine) -->
-<script src="<?= base_url('assets/js/qrcode-canvas.min.js') ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 <script>
 if (typeof QRCode === 'undefined' || !QRCode.toCanvas) {
-    document.write('<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"><\/script>');
+    document.write('<script src="<?= base_url('assets/js/qrcode-canvas.min.js') ?>"><\/script>');
 }
 </script>
 

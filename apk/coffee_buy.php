@@ -849,20 +849,31 @@ function populateReceiptCard(data) {
     }
 
     // Render QR Code Validasi Resmi (Canvas Engine)
+    renderReceiptQr(data.invoice);
+}
+
+async function renderReceiptQr(invoice) {
     const qrCanvas = document.getElementById('rc_qrcode_canvas');
-    if (qrCanvas) {
-        const verifyUrl = getReceiptValidationUrl(data.invoice);
-        if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
-            QRCode.toCanvas(qrCanvas, verifyUrl, {
+    if (!qrCanvas) return;
+    const verifyUrl = getReceiptValidationUrl(invoice);
+
+    for (let i = 0; i < 25; i++) {
+        if (typeof QRCode !== 'undefined' && QRCode.toCanvas) break;
+        await new Promise(r => setTimeout(r, 100));
+    }
+
+    if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+        try {
+            await QRCode.toCanvas(qrCanvas, verifyUrl, {
                 width: 100,
                 margin: 1,
                 color: {
                     dark: '#064e3b',
                     light: '#ffffff'
                 }
-            }, function (error) {
-                if (error) console.error('QR Render Error:', error);
             });
+        } catch (err) {
+            console.error('QR Render Error:', err);
         }
     }
 }
@@ -931,7 +942,8 @@ async function executeShareReceiptImage() {
     btn.disabled = true;
 
     try {
-        // Beri jeda 150ms agar canvas QR Code dan font selesai ter-render penuh di layar
+        // Pastikan QR Code sudah ter-render sempurna ke dalam canvas
+        await renderReceiptQr(currentWaReceiptData.invoice);
         await new Promise(r => setTimeout(r, 150));
 
         const receiptCard = document.getElementById('receiptCardToCapture');
@@ -993,6 +1005,9 @@ async function executeShareReceiptImage() {
 }
 
 async function downloadReceiptPngOnly() {
+    if (currentWaReceiptData) {
+        await renderReceiptQr(currentWaReceiptData.invoice);
+    }
     await new Promise(r => setTimeout(r, 150));
     const receiptCard = document.getElementById('receiptCardToCapture');
     const canvas = await html2canvas(receiptCard, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff' });

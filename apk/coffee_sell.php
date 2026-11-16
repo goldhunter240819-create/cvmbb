@@ -844,20 +844,31 @@ function populateSellReceiptCard(data) {
     }
 
     // Render QR Code Validasi Resmi (Canvas Engine)
+    renderSellReceiptQr(data.invoice);
+}
+
+async function renderSellReceiptQr(invoice) {
     const qrCanvas = document.getElementById('rc_sell_qrcode_canvas');
-    if (qrCanvas) {
-        const verifyUrl = getReceiptValidationUrl(data.invoice);
-        if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
-            QRCode.toCanvas(qrCanvas, verifyUrl, {
+    if (!qrCanvas) return;
+    const verifyUrl = getReceiptValidationUrl(invoice);
+
+    for (let i = 0; i < 25; i++) {
+        if (typeof QRCode !== 'undefined' && QRCode.toCanvas) break;
+        await new Promise(r => setTimeout(r, 100));
+    }
+
+    if (typeof QRCode !== 'undefined' && QRCode.toCanvas) {
+        try {
+            await QRCode.toCanvas(qrCanvas, verifyUrl, {
                 width: 100,
                 margin: 1,
                 color: {
                     dark: '#1e3a8a',
                     light: '#ffffff'
                 }
-            }, function (error) {
-                if (error) console.error('QR Render Error:', error);
             });
+        } catch (err) {
+            console.error('QR Render Error:', err);
         }
     }
 }
@@ -925,7 +936,8 @@ async function executeShareSellReceiptImage() {
     btn.disabled = true;
 
     try {
-        // Beri jeda 150ms agar canvas QR Code dan font selesai ter-render penuh di layar
+        // Pastikan QR Code sudah ter-render sempurna ke dalam canvas
+        await renderSellReceiptQr(currentSellWaData.invoice);
         await new Promise(r => setTimeout(r, 150));
 
         const receiptCard = document.getElementById('receiptSellCardToCapture');
@@ -986,6 +998,9 @@ async function executeShareSellReceiptImage() {
 }
 
 async function downloadSellReceiptPngOnly() {
+    if (currentSellWaData) {
+        await renderSellReceiptQr(currentSellWaData.invoice);
+    }
     await new Promise(r => setTimeout(r, 150));
     const receiptCard = document.getElementById('receiptSellCardToCapture');
     const canvas = await html2canvas(receiptCard, {

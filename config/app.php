@@ -17,16 +17,17 @@ $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
 $docRoot = !empty($_SERVER['DOCUMENT_ROOT']) ? str_replace('\\', '/', realpath($_SERVER['DOCUMENT_ROOT'])) : '';
 $appRoot = str_replace('\\', '/', realpath(__DIR__ . '/..'));
 
-if (!empty($docRoot) && str_starts_with($appRoot, $docRoot)) {
+// Cek apakah diakses via domain/subdomain publik (Cloudflare Tunnel atau custom domain)
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+$isDomainTunnel = ($host !== 'localhost' && !str_starts_with($host, '127.0.0.1') && !str_starts_with($host, '192.168.'));
+
+if ($isDomainTunnel && !str_starts_with($requestUri, '/cvmbb/')) {
+    $baseFolder = '/';
+} elseif (!empty($docRoot) && str_starts_with($appRoot, $docRoot)) {
     $relative = trim(substr($appRoot, strlen($docRoot)), '/\\');
     $baseFolder = !empty($relative) ? '/' . $relative . '/' : '/';
 } else {
-    // Jika diakses melalui subdomain khusus seperti mbb.ghtech.my.id (Cloudflare Tunnel)
-    if ($host !== 'localhost' && !str_starts_with($host, '127.0.0.1') && !str_starts_with($host, '192.168.')) {
-        $baseFolder = '/';
-    } else {
-        $baseFolder = '/cvmbb/';
-    }
+    $baseFolder = '/cvmbb/';
 }
 
 $baseUrl = $protocol . $host . $baseFolder;
