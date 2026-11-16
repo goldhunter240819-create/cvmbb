@@ -18,20 +18,100 @@ $totalCash = (float)$stmtCash->fetchColumn();
 $quickPiu = (float)$db->query("SELECT COALESCE(SUM(remaining_amount), 0) FROM receivables WHERE status != 'LUNAS'")->fetchColumn();
 $quickHut = (float)$db->query("SELECT COALESCE(SUM(remaining_amount), 0) FROM payables WHERE status != 'LUNAS'")->fetchColumn();
 
-// Transaksi Terkini
+// Ambil Semua Transaksi Lintas Divisi untuk Feed Aktivitas Terkini
+$recentBuys = $db->query("
+    SELECT 
+        'BUY_COFFEE' as type,
+        p.id,
+        p.invoice_number as code,
+        p.purchase_date as tdate,
+        p.created_at,
+        p.grand_total as amount,
+        CONCAT('Beli Kopi - ', COALESCE(f.name, 'Petani')) as descr,
+        CONCAT(FORMAT(p.net_weight, 1), ' Kg @ Rp ', FORMAT(p.price_per_kg, 0)) as sub_descr,
+        p.payment_status as status,
+        'OUT' as flow
+    FROM purchases p
+    LEFT JOIN farmers f ON p.farmer_id = f.id
+    ORDER BY p.id DESC LIMIT 30
+")->fetchAll();
+
 $recentSales = $db->query("
-    SELECT 'COFFEE' as type, invoice_number as code, sale_date as tdate, grand_total as amount, 'Penjualan Kopi' as descr 
-    FROM sales ORDER BY id DESC LIMIT 3
+    SELECT 
+        'SELL_COFFEE' as type,
+        s.id,
+        s.invoice_number as code,
+        s.sale_date as tdate,
+        s.created_at,
+        s.grand_total as amount,
+        CONCAT('Jual Kopi - ', COALESCE(c.name, 'Pembeli')) as descr,
+        CONCAT(FORMAT(s.total_weight_kg, 0), ' Kg') as sub_descr,
+        s.payment_status as status,
+        'IN' as flow
+    FROM sales s
+    LEFT JOIN customers c ON s.customer_id = c.id
+    ORDER BY s.id DESC LIMIT 30
+")->fetchAll();
+
+$recentCash = $db->query("
+    SELECT 
+        'CASH' as type,
+        t.id,
+        t.trx_code as code,
+        t.trx_date as tdate,
+        t.created_at,
+        t.amount,
+        COALESCE(t.category, 'Mutasi Kas') as descr,
+        COALESCE(t.description, a.account_name) as sub_descr,
+        'LUNAS' as status,
+        t.trx_direction as flow
+    FROM cash_transactions t
+    LEFT JOIN cash_accounts a ON t.cash_account_id = a.id
+    ORDER BY t.id DESC LIMIT 30
 ")->fetchAll();
 
 $recentBri = $db->query("
-    SELECT 'BRILINK' as type, reference_no as code, transaction_date as tdate, nominal_amount as amount, trx_type as descr 
-    FROM brilink_transactions ORDER BY id DESC LIMIT 3
+    SELECT 
+        'BRILINK' as type,
+        b.id,
+        b.reference_no as code,
+        b.transaction_date as tdate,
+        b.created_at,
+        b.nominal_amount as amount,
+        CONCAT('BRILink - ', b.trx_type) as descr,
+        COALESCE(b.customer_name, b.payment_channel) as sub_descr,
+        b.status,
+        'NEUTRAL' as flow
+    FROM brilink_transactions b
+    ORDER BY b.id DESC LIMIT 30
 ")->fetchAll();
 
-$feed = array_merge($recentSales, $recentBri);
-usort($feed, fn($a, $b) => strcmp($b['tdate'], $a['tdate']));
-$recentFeed = array_slice($feed, 0, 4);
+$recentRoast = $db->query("
+    SELECT 
+        'ROASTING' as type,
+        r.id,
+        r.order_number as code,
+        r.order_date as tdate,
+        r.created_at,
+        r.total_fee as amount,
+        CONCAT('Roasting - ', COALESCE(r.customer_name, 'Pelanggan')) as descr,
+        CONCAT(FORMAT(r.green_bean_weight_kg, 1), ' Kg') as sub_descr,
+        r.payment_status as status,
+        'IN' as flow
+    FROM roasting_orders r
+    ORDER BY r.id DESC LIMIT 30
+")->fetchAll();
+
+// Gabungkan Semua & Urutkan Berdasarkan Waktu Terkini
+$allTransactions = array_merge($recentBuys, $recentSales, $recentCash, $recentBri, $recentRoast);
+usort($allTransactions, function($a, $b) {
+    $timeA = !empty($a['created_at']) ? strtotime($a['created_at']) : strtotime($a['tdate']);
+    $timeB = !empty($b['created_at']) ? strtotime($b['created_at']) : strtotime($b['tdate']);
+    return $timeB - $timeA;
+});
+
+// Ambil 5 Teratas untuk Ditampilkan di Beranda
+$displayFeed = array_slice($allTransactions, 0, 5);
 ?>
 
 <style>
@@ -381,26 +461,209 @@ $recentFeed = array_slice($feed, 0, 4);
 
 <!-- AKTIVITAS & TRANSAKSI TERAKHIR -->
 <div class="section-title mt-2">
-    <span>Transaksi Terkini</span>
-    <a href="<?= base_url('apk/finance.php') ?>" class="text-primary text-decoration-none small" style="font-size: 0.72rem;">Semua</a>
+    <span>Transaksi Terkini (<?= count($displayFeed) ?> Terakhir)</span>
+    <a href="javascript:void(0)" onclick="openAllTrxModal()" class="text-primary text-decoration-none small fw-bold" style="font-size: 0.74rem;">
+        Semua (<?= count($allTransactions) ?>) &raquo;
+    </a>
 </div>
 
-<?php foreach ($recentFeed as $rf): ?>
-    <div class="trx-feed-card">
-        <div class="d-flex align-items-center gap-2">
-            <div class="p-2 rounded-circle <?= $rf['type'] === 'COFFEE' ? 'bg-primary-subtle text-primary' : 'bg-success-subtle text-success' ?>" style="width: 36px; height: 36px; display:flex; align-items:center; justify-content:center;">
-                <i class="bi <?= $rf['type'] === 'COFFEE' ? 'bi-cup-hot-fill' : 'bi-credit-card-2-front-fill' ?>"></i>
+<?php if (empty($displayFeed)): ?>
+    <div class="mobile-card text-center py-4 text-muted mb-4 border-0 shadow-sm">
+        <i class="bi bi-clock-history fs-2 d-block mb-1 text-primary opacity-50"></i>
+        <div class="small fw-bold text-dark">Belum Ada Riwayat Transaksi</div>
+        <div class="text-muted" style="font-size: 0.72rem;">Mulai catat transaksi melalui menu Beli Kopi, Jual Kopi, atau Kas di atas.</div>
+    </div>
+<?php else: ?>
+    <?php foreach ($displayFeed as $rf): ?>
+        <div class="trx-feed-card">
+            <div class="d-flex align-items-center gap-2">
+                <div class="p-2 rounded-circle <?php
+                    if ($rf['type'] === 'BUY_COFFEE') echo 'bg-success-subtle text-success';
+                    elseif ($rf['type'] === 'SELL_COFFEE') echo 'bg-primary-subtle text-primary';
+                    elseif ($rf['type'] === 'BRILINK') echo 'bg-warning-subtle text-warning-emphasis';
+                    elseif ($rf['type'] === 'ROASTING') echo 'bg-secondary-subtle text-secondary';
+                    else echo ($rf['flow'] === 'IN') ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger';
+                ?>" style="width: 38px; height: 38px; display:flex; align-items:center; justify-content:center; flex-shrink: 0;">
+                    <?php if ($rf['type'] === 'BUY_COFFEE'): ?>
+                        <i class="bi bi-cart-plus-fill"></i>
+                    <?php elseif ($rf['type'] === 'SELL_COFFEE'): ?>
+                        <i class="bi bi-truck"></i>
+                    <?php elseif ($rf['type'] === 'BRILINK'): ?>
+                        <i class="bi bi-credit-card-2-front-fill"></i>
+                    <?php elseif ($rf['type'] === 'ROASTING'): ?>
+                        <i class="bi bi-fire"></i>
+                    <?php else: ?>
+                        <i class="bi <?= $rf['flow'] === 'IN' ? 'bi-arrow-down-left-circle-fill' : 'bi-arrow-up-right-circle-fill' ?>"></i>
+                    <?php endif; ?>
+                </div>
+                <div style="line-height: 1.2;">
+                    <div class="fw-bold text-dark" style="font-size: 0.82rem;"><?= e($rf['descr']) ?></div>
+                    <div class="text-muted" style="font-size: 0.68rem;"><?= e($rf['code']) ?> &bull; <?= date('d/m/Y', strtotime($rf['tdate'])) ?></div>
+                </div>
             </div>
-            <div>
-                <div class="fw-bold" style="font-size: 0.78rem;"><?= e($rf['descr']) ?></div>
-                <div class="text-muted" style="font-size: 0.68rem;"><?= e($rf['code']) ?> &bull; <?= date('d/m/Y', strtotime($rf['tdate'])) ?></div>
+            <div class="text-end">
+                <div class="fw-bold <?php
+                    if ($rf['flow'] === 'IN') echo 'text-success';
+                    elseif ($rf['flow'] === 'OUT') echo 'text-danger';
+                    else echo 'text-primary';
+                ?>" style="font-size: 0.82rem;">
+                    <?= ($rf['flow'] === 'IN' ? '+' : ($rf['flow'] === 'OUT' ? '-' : '')) . ' ' . format_rupiah($rf['amount']) ?>
+                </div>
+                <span class="badge <?php
+                    if (($rf['status'] ?? '') === 'LUNAS' || ($rf['status'] ?? '') === 'BERHASIL') echo 'bg-success-subtle text-success border border-success border-opacity-25';
+                    elseif (($rf['status'] ?? '') === 'SEBAGIAN') echo 'bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25';
+                    else echo 'bg-danger-subtle text-danger border border-danger border-opacity-25';
+                ?>" style="font-size: 0.6rem;">
+                    <?= e($rf['status'] ?: 'Sukses') ?>
+                </span>
             </div>
         </div>
-        <div class="text-end">
-            <div class="fw-bold text-success" style="font-size: 0.8rem;"><?= format_rupiah($rf['amount']) ?></div>
-            <span class="badge bg-success-subtle text-success" style="font-size: 0.6rem;">Berhasil</span>
+    <?php endforeach; ?>
+    
+    <div class="px-3 mb-4 mt-2">
+        <button type="button" class="btn btn-sm btn-light border w-100 rounded-pill text-primary fw-semibold py-2 shadow-sm" onclick="openAllTrxModal()">
+            <i class="bi bi-view-list me-1"></i> Buka Semua Riwayat Transaksi (<?= count($allTransactions) ?>)
+        </button>
+    </div>
+<?php endif; ?>
+
+<!-- MODAL SEMUA RIWAYAT TRANSAKSI -->
+<div class="modal fade" id="modalAllTransactions" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-primary text-white py-3">
+                <h6 class="modal-title fw-bold"><i class="bi bi-clock-history me-2"></i>Semua Riwayat Transaksi MBB</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <!-- Search Box -->
+                <div class="input-group input-group-sm mb-3 rounded-pill overflow-hidden bg-white border shadow-sm">
+                    <span class="input-group-text bg-white border-0 ps-3 pe-2 text-muted">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="allTrxSearchInput" class="form-control border-0 ps-1" placeholder="Cari nota, mitra, kategori..." style="box-shadow: none;" oninput="applyTrxFilter()">
+                </div>
+
+                <!-- Tabs Filter -->
+                <div class="d-flex gap-1 overflow-x-auto pb-2 mb-2" style="white-space: nowrap;">
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 fw-semibold filter-tab-btn active" onclick="filterTrxModal('ALL', this)" style="font-size: 0.72rem;">Semua (<?= count($allTransactions) ?>)</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold filter-tab-btn" onclick="filterTrxModal('BUY_COFFEE', this)" style="font-size: 0.72rem;">Beli Kopi (<?= count($recentBuys) ?>)</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold filter-tab-btn" onclick="filterTrxModal('SELL_COFFEE', this)" style="font-size: 0.72rem;">Jual Kopi (<?= count($recentSales) ?>)</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold filter-tab-btn" onclick="filterTrxModal('CASH', this)" style="font-size: 0.72rem;">Mutasi Kas (<?= count($recentCash) ?>)</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold filter-tab-btn" onclick="filterTrxModal('BRILINK', this)" style="font-size: 0.72rem;">BRILink (<?= count($recentBri) ?>)</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold filter-tab-btn" onclick="filterTrxModal('ROASTING', this)" style="font-size: 0.72rem;">Roasting (<?= count($recentRoast) ?>)</button>
+                </div>
+
+                <!-- Daftar Transaksi Modal -->
+                <div id="allTrxListContainer" class="d-flex flex-column gap-2" style="max-height: 420px; overflow-y: auto;">
+                    <?php if (empty($allTransactions)): ?>
+                        <div class="text-center py-4 text-muted small">
+                            <i class="bi bi-inbox fs-2 d-block mb-1 opacity-50"></i>
+                            Belum ada riwayat transaksi yang tercatat.
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($allTransactions as $at): ?>
+                            <?php
+                            $filterStr = strtolower($at['type'] . ' ' . $at['code'] . ' ' . $at['descr'] . ' ' . ($at['sub_descr'] ?? '') . ' ' . ($at['status'] ?? ''));
+                            ?>
+                            <div class="all-trx-item p-2 rounded-3 border bg-white d-flex align-items-center justify-content-between" 
+                                 data-type="<?= e($at['type']) ?>" 
+                                 data-filter="<?= e($filterStr) ?>">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="p-2 rounded-circle <?php
+                                        if ($at['type'] === 'BUY_COFFEE') echo 'bg-success-subtle text-success';
+                                        elseif ($at['type'] === 'SELL_COFFEE') echo 'bg-primary-subtle text-primary';
+                                        elseif ($at['type'] === 'BRILINK') echo 'bg-warning-subtle text-warning-emphasis';
+                                        elseif ($at['type'] === 'ROASTING') echo 'bg-secondary-subtle text-secondary';
+                                        else echo ($at['flow'] === 'IN') ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger';
+                                    ?>" style="width: 36px; height: 36px; display:flex; align-items:center; justify-content:center; flex-shrink: 0;">
+                                        <?php if ($at['type'] === 'BUY_COFFEE'): ?>
+                                            <i class="bi bi-cart-plus-fill"></i>
+                                        <?php elseif ($at['type'] === 'SELL_COFFEE'): ?>
+                                            <i class="bi bi-truck"></i>
+                                        <?php elseif ($at['type'] === 'BRILINK'): ?>
+                                            <i class="bi bi-credit-card-2-front-fill"></i>
+                                        <?php elseif ($at['type'] === 'ROASTING'): ?>
+                                            <i class="bi bi-fire"></i>
+                                        <?php else: ?>
+                                            <i class="bi <?= $at['flow'] === 'IN' ? 'bi-arrow-down-left-circle-fill' : 'bi-arrow-up-right-circle-fill' ?>"></i>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div style="line-height: 1.2;">
+                                        <div class="fw-bold text-dark" style="font-size: 0.8rem;"><?= e($at['descr']) ?></div>
+                                        <div class="text-muted" style="font-size: 0.68rem;">
+                                            <?= e($at['code']) ?> &bull; <?= date('d/m/Y', strtotime($at['tdate'])) ?>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold <?php
+                                        if ($at['flow'] === 'IN') echo 'text-success';
+                                        elseif ($at['flow'] === 'OUT') echo 'text-danger';
+                                        else echo 'text-primary';
+                                    ?>" style="font-size: 0.8rem;">
+                                        <?= ($at['flow'] === 'IN' ? '+' : ($at['flow'] === 'OUT' ? '-' : '')) . ' ' . format_rupiah($at['amount']) ?>
+                                    </div>
+                                    <span class="badge <?php
+                                        if (($at['status'] ?? '') === 'LUNAS' || ($at['status'] ?? '') === 'BERHASIL') echo 'bg-success-subtle text-success border border-success border-opacity-25';
+                                        elseif (($at['status'] ?? '') === 'SEBAGIAN') echo 'bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25';
+                                        else echo 'bg-danger-subtle text-danger border border-danger border-opacity-25';
+                                    ?>" style="font-size: 0.6rem;">
+                                        <?= e($at['status'] ?: 'Sukses') ?>
+                                    </span>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="modal-footer border-0 p-2">
+                <button type="button" class="btn btn-sm btn-light w-100 text-muted fw-semibold py-2" data-bs-dismiss="modal">Tutup</button>
+            </div>
         </div>
     </div>
-<?php endforeach; ?>
+</div>
+
+<script>
+let allTrxModalInstance = null;
+let currentTrxTypeFilter = 'ALL';
+
+function getAllTrxModal() {
+    if (!allTrxModalInstance) {
+        allTrxModalInstance = new bootstrap.Modal(document.getElementById('modalAllTransactions'));
+    }
+    return allTrxModalInstance;
+}
+
+function openAllTrxModal() {
+    getAllTrxModal().show();
+    setTimeout(() => {
+        document.getElementById('allTrxSearchInput')?.focus();
+    }, 300);
+}
+
+function filterTrxModal(type, btn) {
+    currentTrxTypeFilter = type;
+    document.querySelectorAll('.filter-tab-btn').forEach(b => {
+        b.classList.remove('btn-primary', 'active');
+        b.classList.add('btn-outline-secondary');
+    });
+    btn.classList.remove('btn-outline-secondary');
+    btn.classList.add('btn-primary', 'active');
+    applyTrxFilter();
+}
+
+function applyTrxFilter() {
+    const q = (document.getElementById('allTrxSearchInput')?.value || '').toLowerCase().trim();
+    const items = document.querySelectorAll('.all-trx-item');
+    items.forEach(el => {
+        const itemType = el.getAttribute('data-type') || '';
+        const itemText = el.getAttribute('data-filter') || '';
+        const matchType = (currentTrxTypeFilter === 'ALL' || itemType === currentTrxTypeFilter);
+        const matchSearch = (!q || itemText.includes(q));
+        el.style.display = (matchType && matchSearch) ? 'flex' : 'none';
+    });
+}
+</script>
 
 <?php require_once __DIR__ . '/layout/footer.php'; ?>
