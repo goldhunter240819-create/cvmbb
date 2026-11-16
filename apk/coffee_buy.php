@@ -516,7 +516,114 @@ $kpi = $db->query("
                     </div>
                     <div class="col-8">
                         <button type="button" class="btn btn-sm btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-1" onclick="confirmAndSendWa()">
-                            <i class="bi bi-send-fill me-1"></i>Kirim Struk Sekarang
+                            <i class="bi bi-eye-fill me-1"></i>Lihat & Kirim Struk
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PREVIEW STRUK DIGITAL ALA GOPAY / E-WALLET -->
+<div class="modal fade" id="modalReceiptPreview" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white py-2 px-3 border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-receipt text-success fs-5"></i>
+                    <span class="small fw-bold text-white">Struk Transaksi Digital (GoPay Style)</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-3 bg-light">
+                <!-- STRUK CARD TO BE CONVERTED TO IMAGE -->
+                <div id="receiptCardToCapture" class="p-4 bg-white rounded-4 shadow-sm mx-auto position-relative" style="max-width: 350px; font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; border: 1px solid #e2e8f0;">
+                    <!-- Header Struk -->
+                    <div class="text-center pb-3 border-bottom border-dashed">
+                        <div class="d-inline-flex p-2 rounded-circle bg-success bg-opacity-10 text-success mb-2">
+                            <i class="bi bi-check-circle-fill fs-1"></i>
+                        </div>
+                        <div class="badge bg-success text-white px-3 py-1 rounded-pill small fw-bold mb-1">
+                            TIMBANGAN BERHASIL
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" id="rc_grand_total">Rp 0</h3>
+                        <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                            CV. MAJU BERKAH BERSAMA
+                        </div>
+                    </div>
+
+                    <!-- Detail Transaksi Grid -->
+                    <div class="py-3 border-bottom border-dashed" style="font-size: 0.8rem;">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">No. Nota</span>
+                            <strong class="font-monospace text-dark" id="rc_invoice">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Tanggal</span>
+                            <span class="fw-semibold text-dark" id="rc_date">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Mitra Petani</span>
+                            <strong class="text-dark" id="rc_farmer_name">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Bruto / Tarra</span>
+                            <span class="text-dark" id="rc_bruto_tarra">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 p-2 bg-success bg-opacity-10 rounded-2">
+                            <span class="fw-bold text-success">BERAT NETTO</span>
+                            <strong class="fw-bold text-success fs-6" id="rc_net">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Harga Beli / Kg</span>
+                            <strong class="text-dark" id="rc_price">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Status Pembayaran</span>
+                            <span id="rc_status_badge" class="badge bg-success-subtle text-success">Lunas</span>
+                        </div>
+                        <div id="rc_dp_box" style="display: none;" class="p-2 rounded-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 mt-2">
+                            <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                                <span class="text-muted">Uang Muka (DP):</span>
+                                <strong class="text-dark" id="rc_paid_disp">Rp 0</strong>
+                            </div>
+                            <div class="d-flex justify-content-between" style="font-size: 0.75rem;">
+                                <span class="text-danger fw-semibold">Sisa Tagihan:</span>
+                                <strong class="text-danger" id="rc_remaining_disp">Rp 0</strong>
+                            </div>
+                        </div>
+                        <div id="rc_notes_container" class="mt-2 text-muted" style="font-size: 0.72rem; display: none;">
+                            Catatan: <span id="rc_notes_text">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer Struk -->
+                    <div class="pt-3 text-center" style="font-size: 0.68rem; color: #94a3b8;">
+                        <i class="bi bi-shield-check text-success me-1"></i>Struk Digital Sah & Resmi MBB Field System<br>
+                        Gudang Air Hitam, Lampung Barat
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="modal-footer border-0 p-3 bg-white">
+                <div class="row g-2 w-100">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnShareWaReceipt" onclick="executeShareReceiptImage()">
+                            <i class="bi bi-whatsapp fs-5"></i>
+                            <span>Kirim Gambar & Teks ke WA</span>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-2 fw-semibold" onclick="downloadReceiptPngOnly()">
+                            <i class="bi bi-download me-1"></i>Unduh Gambar
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-sm btn-outline-success w-100 py-2 fw-semibold" onclick="sendWaTextDirectOnly()">
+                            <i class="bi bi-chat-text me-1"></i>Kirim Teks Saja
                         </button>
                     </div>
                 </div>
@@ -529,6 +636,7 @@ $kpi = $db->query("
 let addBuyModalInstance = null;
 let pickFarmerModalInstance = null;
 let inputWaModalInstance = null;
+let receiptPreviewModalInstance = null;
 let currentWaReceiptData = null;
 
 function getBuyModal() {
@@ -550,6 +658,13 @@ function getInputWaModal() {
         inputWaModalInstance = new bootstrap.Modal(document.getElementById('modalInputWaPhone'));
     }
     return inputWaModalInstance;
+}
+
+function getReceiptPreviewModal() {
+    if (!receiptPreviewModalInstance) {
+        receiptPreviewModalInstance = new bootstrap.Modal(document.getElementById('modalReceiptPreview'));
+    }
+    return receiptPreviewModalInstance;
 }
 
 function openFarmerPicker() {
@@ -664,28 +779,63 @@ function buildWaReceiptText(data) {
            `_Terima kasih atas kerja samanya._\n_Struk digital sah MBB Field System._`;
 }
 
-function openWhatsAppUrl(phone, text) {
-    const cleanPhone = cleanPhoneForWa(phone);
-    const encoded = encodeURIComponent(text);
-    const waUrl = cleanPhone 
-        ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encoded}`
-        : `https://api.whatsapp.com/send?text=${encoded}`;
-    window.open(waUrl, '_blank');
+function populateReceiptCard(data) {
+    const formatRp = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+    const netKg = Number(data.net || 0).toLocaleString('id-ID', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+    const grossKg = Number(data.gross || 0).toLocaleString('id-ID', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+    const tareKg = Number(data.tare || 0).toLocaleString('id-ID', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+
+    document.getElementById('rc_grand_total').textContent = formatRp(data.total);
+    document.getElementById('rc_invoice').textContent = data.invoice;
+    document.getElementById('rc_date').textContent = data.date;
+    document.getElementById('rc_farmer_name').textContent = data.farmer_name;
+    document.getElementById('rc_bruto_tarra').textContent = `${grossKg} Kg (Tarra: ${tareKg} Kg)`;
+    document.getElementById('rc_net').textContent = `${netKg} Kg`;
+    document.getElementById('rc_price').textContent = `${formatRp(data.price)} / Kg`;
+
+    const badge = document.getElementById('rc_status_badge');
+    const dpBox = document.getElementById('rc_dp_box');
+
+    if (data.status === 'LUNAS') {
+        badge.className = 'badge bg-success-subtle text-success border border-success border-opacity-25';
+        badge.textContent = 'Lunas / Tunai';
+        dpBox.style.display = 'none';
+    } else if (data.status === 'SEBAGIAN') {
+        badge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25';
+        badge.textContent = 'DP / Sebagian';
+        dpBox.style.display = 'block';
+        document.getElementById('rc_paid_disp').textContent = formatRp(data.paid);
+        const rem = Math.max(0, Number(data.total || 0) - Number(data.paid || 0));
+        document.getElementById('rc_remaining_disp').textContent = formatRp(rem);
+    } else {
+        badge.className = 'badge bg-danger-subtle text-danger border border-danger border-opacity-25';
+        badge.textContent = 'Tempo / Hutang';
+        dpBox.style.display = 'none';
+    }
+
+    const notesContainer = document.getElementById('rc_notes_container');
+    if (data.notes) {
+        notesContainer.style.display = 'block';
+        document.getElementById('rc_notes_text').textContent = data.notes;
+    } else {
+        notesContainer.style.display = 'none';
+    }
 }
 
 function prepareWaReceipt(data) {
     currentWaReceiptData = data;
+    populateReceiptCard(data);
+
     const phone = (data.farmer_phone || '').trim();
-    if (phone) {
-        const text = buildWaReceiptText(data);
-        openWhatsAppUrl(phone, text);
-    } else {
+    if (!phone) {
         document.getElementById('wa_prompt_farmer_name').textContent = data.farmer_name || 'Petani';
         document.getElementById('wa_prompt_phone_input').value = '';
         getInputWaModal().show();
         setTimeout(() => {
             document.getElementById('wa_prompt_phone_input')?.focus();
         }, 300);
+    } else {
+        getReceiptPreviewModal().show();
     }
 }
 
@@ -713,9 +863,89 @@ function confirmAndSendWa() {
     }
 
     currentWaReceiptData.farmer_phone = phoneVal;
-    const text = buildWaReceiptText(currentWaReceiptData);
-    openWhatsAppUrl(phoneVal, text);
     getInputWaModal().hide();
+
+    // Langsung buka preview struk bergaya GoPay
+    setTimeout(() => {
+        getReceiptPreviewModal().show();
+    }, 300);
+}
+
+async function executeShareReceiptImage() {
+    if (!currentWaReceiptData) return;
+    const btn = document.getElementById('btnShareWaReceipt');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyiapkan Gambar...';
+    btn.disabled = true;
+
+    try {
+        const receiptCard = document.getElementById('receiptCardToCapture');
+        const canvas = await html2canvas(receiptCard, {
+            scale: 2.5,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+        });
+
+        canvas.toBlob(async (blob) => {
+            const fileName = `Struk_MBB_${currentWaReceiptData.invoice.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+            const file = new File([blob], fileName, { type: 'image/png' });
+            const caption = buildWaReceiptText(currentWaReceiptData);
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Struk Timbangan Kopi MBB',
+                        text: caption
+                    });
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                } catch (shareErr) {
+                    console.log('User cancelled share', shareErr);
+                }
+            }
+
+            // Fallback download PNG & open WA
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            const phone = cleanPhoneForWa(currentWaReceiptData.farmer_phone);
+            const waUrl = phone 
+                ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(caption)}`
+                : `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`;
+            window.open(waUrl, '_blank');
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }, 'image/png');
+    } catch (err) {
+        console.error(err);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        alert('Gagal membuat gambar struk: ' + err.message);
+    }
+}
+
+async function downloadReceiptPngOnly() {
+    const receiptCard = document.getElementById('receiptCardToCapture');
+    const canvas = await html2canvas(receiptCard, { scale: 2.5, useCORS: true, backgroundColor: '#ffffff' });
+    const link = document.createElement('a');
+    link.download = `Struk_MBB_${(currentWaReceiptData?.invoice || 'nota').replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+function sendWaTextDirectOnly() {
+    if (!currentWaReceiptData) return;
+    const phone = cleanPhoneForWa(currentWaReceiptData.farmer_phone);
+    const caption = buildWaReceiptText(currentWaReceiptData);
+    const waUrl = phone 
+        ? `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(caption)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(caption)}`;
+    window.open(waUrl, '_blank');
 }
 
 document.addEventListener('DOMContentLoaded', function() {

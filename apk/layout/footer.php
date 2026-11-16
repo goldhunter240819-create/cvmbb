@@ -40,6 +40,9 @@ $localIp = gethostbyname(gethostname());
 <!-- SweetAlert2 11 Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<!-- html2canvas for Generating Image Receipts ala GoPay / E-Wallet -->
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+
 <script>
 // Global SweetAlert2 Anti-Shift (Mencegah Layar Bergeser/Melompat Saat Popup Terbuka)
 if (typeof Swal !== 'undefined') {

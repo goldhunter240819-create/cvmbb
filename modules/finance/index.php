@@ -293,6 +293,9 @@ require_once __DIR__ . '/../../components/topbar.php';
             </div>
             <div class="col-md-auto text-end d-flex gap-2">
                 <?php if (Permission::can('finance.manage')): ?>
+                    <a href="<?= base_url('modules/finance/categories.php') ?>" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-tags me-1"></i> Kelola Kategori
+                    </a>
                     <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalTransferCash">
                         <i class="bi bi-arrow-left-right me-1"></i> Mutasi Antar-Kas
                     </button>

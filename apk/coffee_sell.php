@@ -260,13 +260,14 @@ $kpi = $db->query("
                             "invoice"        => $s["invoice_number"],
                             "date"           => date("d/m/Y", strtotime($s["sale_date"])),
                             "weight"         => (float)$s["total_weight_kg"],
+                            "price"          => $s["total_weight_kg"] > 0 ? round($s["grand_total"] / $s["total_weight_kg"]) : 0,
                             "total"          => (float)$s["grand_total"],
                             "paid"           => (float)$s["paid_amount"],
                             "status"         => $payStatus,
                             "notes"          => $s["notes"] ?? ""
                         ], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)'>
                     <i class="bi bi-whatsapp fs-6"></i>
-                    <span style="font-size: 0.78rem;">Kirim Faktur WA</span>
+                    <span style="font-size: 0.78rem;">Kirim Faktur WA (Gambar & Teks)</span>
                 </button>
             </div>
         </div>
@@ -520,7 +521,110 @@ $kpi = $db->query("
                     </div>
                     <div class="col-8">
                         <button type="button" class="btn btn-sm btn-primary w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-1" onclick="confirmAndSendSellWa()">
-                            <i class="bi bi-send-fill me-1"></i>Kirim Faktur Sekarang
+                            <i class="bi bi-receipt me-1"></i>Lanjut ke Struk WA
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PREVIEW STRUK/FAKTUR DIGITAL ALA GOPAY / E-WALLET -->
+<div class="modal fade" id="modalSellReceiptPreview" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg overflow-hidden">
+            <div class="modal-header bg-dark text-white py-2 px-3 border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-receipt text-primary fs-5"></i>
+                    <span class="small fw-bold text-white">Faktur Penjualan Digital (GoPay Style)</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            
+            <div class="modal-body p-3 bg-light">
+                <!-- STRUK CARD TO BE CONVERTED TO IMAGE -->
+                <div id="receiptSellCardToCapture" class="p-4 bg-white rounded-4 shadow-sm mx-auto position-relative" style="max-width: 350px; font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; border: 1px solid #e2e8f0;">
+                    <!-- Header Struk -->
+                    <div class="text-center pb-3 border-bottom border-dashed">
+                        <div class="d-inline-flex p-2 rounded-circle bg-primary bg-opacity-10 text-primary mb-2">
+                            <i class="bi bi-check-circle-fill fs-1"></i>
+                        </div>
+                        <div class="badge bg-primary text-white px-3 py-1 rounded-pill small fw-bold mb-1">
+                            PENJUALAN BERHASIL
+                        </div>
+                        <h3 class="fw-bold text-dark mb-0 mt-1" id="rc_sell_grand_total">Rp 0</h3>
+                        <div class="text-muted small mt-1" style="font-size: 0.72rem;">
+                            CV. MAJU BERKAH BERSAMA
+                        </div>
+                    </div>
+
+                    <!-- Detail Transaksi Grid -->
+                    <div class="py-3 border-bottom border-dashed" style="font-size: 0.8rem;">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">No. Faktur</span>
+                            <strong class="font-monospace text-dark" id="rc_sell_invoice">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Tanggal</span>
+                            <span class="fw-semibold text-dark" id="rc_sell_date">-</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Pembeli / Mitra</span>
+                            <strong class="text-dark" id="rc_sell_customer_name">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 p-2 bg-primary bg-opacity-10 rounded-2">
+                            <span class="fw-bold text-primary">TOTAL VOLUME</span>
+                            <strong class="fw-bold text-primary fs-6" id="rc_sell_net">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Harga Jual / Kg</span>
+                            <strong class="text-dark" id="rc_sell_price">-</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Status Pembayaran</span>
+                            <span id="rc_sell_status_badge" class="badge bg-success-subtle text-success">Lunas</span>
+                        </div>
+                        <div id="rc_sell_dp_box" style="display: none;" class="p-2 rounded-2 bg-warning bg-opacity-10 border border-warning border-opacity-25 mt-2">
+                            <div class="d-flex justify-content-between mb-1" style="font-size: 0.75rem;">
+                                <span class="text-muted">Uang Muka (DP):</span>
+                                <strong class="text-success fw-bold" id="rc_sell_paid_disp">Rp 0</strong>
+                            </div>
+                            <div class="d-flex justify-content-between" style="font-size: 0.75rem;">
+                                <span class="text-danger fw-semibold">Sisa Tagihan / Piutang:</span>
+                                <strong class="text-danger" id="rc_sell_remaining_disp">Rp 0</strong>
+                            </div>
+                        </div>
+                        <div id="rc_sell_notes_container" class="mt-2 text-muted" style="font-size: 0.72rem; display: none;">
+                            Catatan: <span id="rc_sell_notes_text">-</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer Struk -->
+                    <div class="pt-3 text-center" style="font-size: 0.68rem; color: #94a3b8;">
+                        <i class="bi bi-shield-check text-primary me-1"></i>Faktur Digital Sah & Resmi MBB Field System<br>
+                        Gudang Air Hitam, Lampung Barat
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="modal-footer border-0 p-3 bg-white">
+                <div class="row g-2 w-100">
+                    <div class="col-12">
+                        <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2" id="btnShareSellWaReceipt" onclick="executeShareSellReceiptImage()">
+                            <i class="bi bi-whatsapp fs-5"></i>
+                            <span>Kirim Gambar & Teks ke WA</span>
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100 py-2 fw-semibold" onclick="downloadSellReceiptPngOnly()">
+                            <i class="bi bi-download me-1"></i>Unduh Gambar
+                        </button>
+                    </div>
+                    <div class="col-6">
+                        <button type="button" class="btn btn-sm btn-outline-success w-100 py-2 fw-semibold" onclick="sendSellWaTextDirectOnly()">
+                            <i class="bi bi-chat-text me-1"></i>Kirim Teks Saja
                         </button>
                     </div>
                 </div>
@@ -533,6 +637,7 @@ $kpi = $db->query("
 let addSaleModalInstance = null;
 let pickCustomerModalInstance = null;
 let inputSellWaModalInstance = null;
+let receiptSellPreviewModalInstance = null;
 let currentSellWaData = null;
 
 function getSaleModal() {
@@ -554,6 +659,13 @@ function getInputSellWaModal() {
         inputSellWaModalInstance = new bootstrap.Modal(document.getElementById('modalInputSellWaPhone'));
     }
     return inputSellWaModalInstance;
+}
+
+function getSellReceiptPreviewModal() {
+    if (!receiptSellPreviewModalInstance) {
+        receiptSellPreviewModalInstance = new bootstrap.Modal(document.getElementById('modalSellReceiptPreview'));
+    }
+    return receiptSellPreviewModalInstance;
 }
 
 function openCustomerPicker() {
@@ -663,13 +775,54 @@ function buildSellWaInvoiceText(data) {
            `_Faktur digital resmi diterbitkan oleh MBB Field System._\n_Terima kasih atas kerja samanya._`;
 }
 
+function populateSellReceiptCard(data) {
+    const formatRp = (num) => 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+    const weightKg = Number(data.weight || 0).toLocaleString('id-ID', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' Kg';
+
+    document.getElementById('rc_sell_grand_total').textContent = formatRp(data.total);
+    document.getElementById('rc_sell_invoice').textContent = data.invoice || '-';
+    document.getElementById('rc_sell_date').textContent = data.date || '-';
+    document.getElementById('rc_sell_customer_name').textContent = data.customer_name || 'Pembeli';
+    document.getElementById('rc_sell_net').textContent = weightKg;
+    
+    const priceVal = data.price ? formatRp(data.price) : (data.weight > 0 ? formatRp(Math.round(data.total / data.weight)) : '-');
+    document.getElementById('rc_sell_price').textContent = priceVal;
+
+    const badge = document.getElementById('rc_sell_status_badge');
+    const dpBox = document.getElementById('rc_sell_dp_box');
+
+    if (data.status === 'SEBAGIAN') {
+        badge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning border-opacity-25';
+        badge.textContent = 'DP / Sebagian';
+        dpBox.style.display = 'block';
+        document.getElementById('rc_sell_paid_disp').textContent = formatRp(data.paid);
+        const rem = Math.max(0, Number(data.total || 0) - Number(data.paid || 0));
+        document.getElementById('rc_sell_remaining_disp').textContent = formatRp(rem);
+    } else if (data.status === 'BELUM_BAYAR') {
+        badge.className = 'badge bg-danger-subtle text-danger border border-danger border-opacity-25';
+        badge.textContent = 'Tempo / Piutang';
+        dpBox.style.display = 'none';
+    } else {
+        badge.className = 'badge bg-success-subtle text-success border border-success border-opacity-25';
+        badge.textContent = 'Lunas';
+        dpBox.style.display = 'none';
+    }
+
+    const notesContainer = document.getElementById('rc_sell_notes_container');
+    if (data.notes && data.notes.trim() !== '') {
+        notesContainer.style.display = 'block';
+        document.getElementById('rc_sell_notes_text').textContent = data.notes;
+    } else {
+        notesContainer.style.display = 'none';
+    }
+}
+
 function prepareSellWaInvoice(data) {
     currentSellWaData = data;
     const phone = (data.customer_phone || '').trim();
     if (phone) {
-        const text = buildSellWaInvoiceText(data);
-        const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhoneForWa(phone)}&text=${encodeURIComponent(text)}`;
-        window.open(waUrl, '_blank');
+        populateSellReceiptCard(data);
+        getSellReceiptPreviewModal().show();
     } else {
         document.getElementById('wa_prompt_cust_name').textContent = data.customer_name || 'Pembeli';
         document.getElementById('wa_prompt_cust_phone_input').value = '';
@@ -704,10 +857,91 @@ function confirmAndSendSellWa() {
     }
 
     currentSellWaData.customer_phone = phoneVal;
-    const text = buildSellWaInvoiceText(currentSellWaData);
-    const waUrl = `https://api.whatsapp.com/send?phone=${cleanPhoneForWa(phoneVal)}&text=${encodeURIComponent(text)}`;
-    window.open(waUrl, '_blank');
     getInputSellWaModal().hide();
+
+    setTimeout(() => {
+        populateSellReceiptCard(currentSellWaData);
+        getSellReceiptPreviewModal().show();
+    }, 300);
+}
+
+async function executeShareSellReceiptImage() {
+    if (!currentSellWaData) return;
+    const btn = document.getElementById('btnShareSellWaReceipt');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Menyiapkan Gambar...';
+    btn.disabled = true;
+
+    try {
+        const receiptCard = document.getElementById('receiptSellCardToCapture');
+        const canvas = await html2canvas(receiptCard, {
+            scale: 2.5,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+        });
+
+        canvas.toBlob(async (blob) => {
+            const fileName = `Faktur_MBB_${currentSellWaData.invoice.replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+            const file = new File([blob], fileName, { type: 'image/png' });
+            const caption = buildSellWaInvoiceText(currentSellWaData);
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'Faktur Penjualan Kopi MBB',
+                        text: caption
+                    });
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    return;
+                } catch (shareErr) {
+                    console.log('User cancelled share', shareErr);
+                }
+            }
+
+            // Fallback download PNG & open WA
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            const phone = cleanPhoneForWa(currentSellWaData.customer_phone);
+            const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(caption)}`;
+            window.open(waUrl, '_blank');
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }, 'image/png');
+
+    } catch (err) {
+        console.error('Error html2canvas:', err);
+        alert('Gagal membuat gambar faktur. Mengalihkan ke teks...');
+        sendSellWaTextDirectOnly();
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    }
+}
+
+async function downloadSellReceiptPngOnly() {
+    const receiptCard = document.getElementById('receiptSellCardToCapture');
+    const canvas = await html2canvas(receiptCard, {
+        scale: 2.5,
+        useCORS: true,
+        backgroundColor: '#ffffff'
+    });
+    const link = document.createElement('a');
+    link.download = `Faktur_MBB_${(currentSellWaData?.invoice || 'Jual').replace(/[^a-zA-Z0-9]/g, '_')}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+}
+
+function sendSellWaTextDirectOnly() {
+    if (!currentSellWaData) return;
+    const phone = cleanPhoneForWa(currentSellWaData.customer_phone);
+    const text = buildSellWaInvoiceText(currentSellWaData);
+    const waUrl = `https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(text)}`;
+    window.open(waUrl, '_blank');
 }
 
 document.addEventListener('DOMContentLoaded', function() {
